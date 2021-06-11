@@ -23,7 +23,7 @@ require("ffi/posix_h")
 -- TODO: For nightmode flag detection
 --require("ffi/mxcfb_h")
 
-local lfs = require("lib/lfs")
+local lfs = require("lfs")
 local util = require("lib/util")
 local INIFile = require("lib/inifile")
 local FBInk = ffi.load("lib/libfbink.so.1.0.0")
@@ -112,7 +112,7 @@ function NanoClock:waitForEvent()
 		end
 
 		if poll_num > 0 then
-			if bit.band(pfd.revents, C.POLLIN) then
+			if bit.band(pfd[0].revents, C.POLLIN) then
 				local damage = ffi.new("mxcfb_damage_update[1]")
 
 				while true do
@@ -140,15 +140,17 @@ function NanoClock:waitForEvent()
 						error(string.format("read: %s", C.strerror(errno)))
 					end
 
+					print(len, damage[0].format, C.DAMAGE_UPDATE_DATA_V1_NTX)
+
 					-- Okay, check that the damage event is actually valid...
-					if damage.format ~= C.DAMAGE_UPDATE_DATA_V1_NTX or
-					   damage.format ~= C.DAMAGE_UPDATE_DATA_V1 or
-					   damage.format ~= C.DAMAGE_UPDATE_DATA_V2 then
+					if damage[0].format ~= C.DAMAGE_UPDATE_DATA_V1_NTX or
+					   damage[0].format ~= C.DAMAGE_UPDATE_DATA_V1 or
+					   damage[0].format ~= C.DAMAGE_UPDATE_DATA_V2 then
 						print("Invalid damage event!")
 					end
 
 					-- Then, check that it isn't our own damage event...
-					if self.damage_marker and damage.data.update_marker ~= self.damage_marker then
+					if self.damage_marker and damage[0].data.update_marker ~= self.damage_marker then
 						-- TODO: Damage area check
 						print("Updating clock")
 						self:displayClock()
