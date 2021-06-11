@@ -1,4 +1,5 @@
 #! /mnt/onboard/.adds/koreader/luajit
+-- FIXME: Build & bundle LuaJIT, luafilesystem & FBInk ourselves.
 
 --[[
 	NanoClock: A persnickety clock for Kobo devices
@@ -142,22 +143,18 @@ function NanoClock:waitForEvent()
 						error(string.format("read: %s", C.strerror(errno)))
 					end
 
-					print(len, damage[0].format, C.DAMAGE_UPDATE_DATA_V1_NTX)
-					print(damage[0].format == C.DAMAGE_UPDATE_DATA_V1_NTX)
-
 					-- Okay, check that the damage event is actually valid...
-					if damage[0].format ~= C.DAMAGE_UPDATE_DATA_V1_NTX or
-					   damage[0].format ~= C.DAMAGE_UPDATE_DATA_V1 or
-					   damage[0].format ~= C.DAMAGE_UPDATE_DATA_V2 then
+					if damage[0].format == C.DAMAGE_UPDATE_DATA_V1_NTX or
+					   damage[0].format == C.DAMAGE_UPDATE_DATA_V1 or
+					   damage[0].format == C.DAMAGE_UPDATE_DATA_V2 then
+						-- Then, check that it isn't our own damage event...
+						if not self.damage_marker or self.damage_marker and damage[0].data.update_marker ~= self.damage_marker then
+							-- TODO: Damage area check
+							print("Updating clock")
+							self:displayClock()
+						end
+					else
 						print("Invalid damage event!")
-					end
-
-					print(self.damage_marker, damage[0].data.update_marker)
-					-- Then, check that it isn't our own damage event...
-					if not self.damage_marker or self.damage_marker and damage[0].data.update_marker ~= self.damage_marker then
-						-- TODO: Damage area check
-						print("Updating clock")
-						self:displayClock()
 					end
 				end
 			end
