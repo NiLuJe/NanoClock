@@ -85,6 +85,8 @@ function NanoClock:prepareClock()
 end
 
 function NanoClock:displayClock()
+	self:prepareClock()
+
 	-- TODO: Actually honor settings ;p.
 	FBInk.fbink_print(self.fbink_fd, self.clock_string, self.fbink_cfg)
 
@@ -141,6 +143,7 @@ function NanoClock:waitForEvent()
 					end
 
 					print(len, damage[0].format, C.DAMAGE_UPDATE_DATA_V1_NTX)
+					print(damage[0].format == C.DAMAGE_UPDATE_DATA_V1_NTX)
 
 					-- Okay, check that the damage event is actually valid...
 					if damage[0].format ~= C.DAMAGE_UPDATE_DATA_V1_NTX or
@@ -149,8 +152,9 @@ function NanoClock:waitForEvent()
 						print("Invalid damage event!")
 					end
 
+					print(self.damage_marker, damage[0].data.update_marker)
 					-- Then, check that it isn't our own damage event...
-					if self.damage_marker and damage[0].data.update_marker ~= self.damage_marker then
+					if not self.damage_marker or self.damage_marker and damage[0].data.update_marker ~= self.damage_marker then
 						-- TODO: Damage area check
 						print("Updating clock")
 						self:displayClock()
