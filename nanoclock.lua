@@ -9,8 +9,8 @@
 	SPDX-License-Identifier: GPL-3.0-or-later
 --]]
 
--- TODO: Shell wrapper to handle wait_for_nickel & the Aura FW check
---       And, of course, the kernel module loading
+-- TODO: Shell wrapper to handle udev workarounds, wait_for_nickel & the Aura FW check
+--       And, of course, the kernel module loading. Probably going to need a minimal cli fbink build to handle the PLATFORM detect.
 
 -- FIXME: Log to syslog instead of using print & error.
 
