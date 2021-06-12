@@ -25,11 +25,19 @@ require("ffi/posix_h")
 -- TODO: For nightmode flag detection
 --require("ffi/mxcfb_h")
 
+-- Mangle package search paths to sart looking inside lib/ first...
+package.path =
+    "lib/?.lua;" ..
+    package.path
+package.cpath =
+    "lib/?.so;" ..
+    package.cpath
+
 -- FIXME: Mangle package loading so I can keep this in lib/
 local lfs = require("lfs")
-local util = require("lib/util")
-local Geom = require("lib/geometry")
-local INIFile = require("lib/inifile")
+local util = require("util")
+local Geom = require("geometry")
+local INIFile = require("inifile")
 local FBInk = ffi.load("lib/libfbink.so.1.0.0")
 
 local NanoClock = {
@@ -41,7 +49,7 @@ local NanoClock = {
 
 	-- State tracking
 	damage_marker = 0,
-	--damage_area = Geom:new{x = 0, y = 0, w = 0, h = 0},
+	damage_area = Geom:new{x = 0, y = 0, w = 0, h = 0},
 }
 
 function NanoClock:init()
@@ -102,8 +110,11 @@ function NanoClock:displayClock()
 	self.damage_marker = FBInk.fbink_get_last_marker()
 
 	-- Remember our damage area to detect if we actually need to repaint
-	-- FIXME: Unifiy to a Geom rect (and actually implement intersect checks)!
-	self.damage_area = FBInk.fbink_get_last_rect()
+	local rect = FBInk.fbink_get_last_rect()
+	self.damage_area.x = rect.left
+	self.damage_area.y = rect.top
+	self.damage_area.w = rect.width
+	self.damage_area.h = rect.height
 end
 
 function NanoClock:waitForEvent()
@@ -156,9 +167,19 @@ function NanoClock:waitForEvent()
 					   damage.format == C.DAMAGE_UPDATE_DATA_V2 then
 						-- Then, check that it isn't our own damage event...
 						if damage.data.update_marker ~= self.damage_marker then
-							-- TODO: Damage area check
-							print("Updating clock")
-							self:displayClock()
+							-- Then, that it actually drew over our clock...
+							local update_area = Geom:new{
+								x = damage.data.update_region.left,
+								y = damage.data.update_region.top,
+								w = damage.data.update_region.width,
+								h = damage.data.update_region.height,
+							}
+							if update_area:intersectWith(self.damage_area) then
+								print("Updating clock")
+								self:displayClock()
+							else
+								print("No clock update required")
+							end
 						end
 					else
 						print("Invalid damage event!")
