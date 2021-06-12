@@ -50,12 +50,12 @@ function NanoClock:init()
 end
 
 function NanoClock:initFBInk()
-	self.fbink_cfg = ffi.new("FBInkConfig[1]")
+	self.fbink_cfg = ffi.new("FBInkConfig")
 
 	-- Enable logging to syslog ASAP
-	self.fbink_cfg[0].is_verbose = false
-	self.fbink_cfg[0].is_quiet = true
-	self.fbink_cfg[0].to_syslog = true
+	self.fbink_cfg.is_verbose = false
+	self.fbink_cfg.is_quiet = true
+	self.fbink_cfg.to_syslog = true
 	FBInk.fbink_update_verbosity(self.fbink_cfg)
 
 	self.fbink_fd = FBInk.fbink_open()
