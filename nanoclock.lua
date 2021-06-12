@@ -28,6 +28,7 @@ require("ffi/posix_h")
 -- FIXME: Mangle package loading so I can keep this in lib/
 local lfs = require("lfs")
 local util = require("lib/util")
+local Geom = require("lib/geometry")
 local INIFile = require("lib/inifile")
 local FBInk = ffi.load("lib/libfbink.so.1.0.0")
 
