@@ -102,9 +102,9 @@ function NanoClock:displayClock()
 end
 
 function NanoClock:waitForEvent()
-	local pfd = ffi.new("struct pollfd[1]")
-	pfd[0].fd = self.damage_fd
-	pfd[0].events = C.POLLIN
+	local pfd = ffi.new("struct pollfd")
+	pfd.fd = self.damage_fd
+	pfd.events = C.POLLIN
 
 	while true do
 		local poll_num = C.poll(pfd, 1, -1);
@@ -117,11 +117,11 @@ function NanoClock:waitForEvent()
 		end
 
 		if poll_num > 0 then
-			if bit.band(pfd[0].revents, C.POLLIN) then
-				local damage = ffi.new("mxcfb_damage_update[1]")
+			if bit.band(pfd.revents, C.POLLIN) then
+				local damage = ffi.new("mxcfb_damage_update")
 
 				while true do
-					local len = C.read(self.damage_fd, damage, ffi.sizeof(damage[0]))
+					local len = C.read(self.damage_fd, damage, ffi.sizeof(damage))
 
 					if len < 0 then
 						local errno = ffi.errno()
@@ -139,18 +139,18 @@ function NanoClock:waitForEvent()
 						error(string.format("read: %s", C.strerror(errno)))
 					end
 
-					if len ~= ffi.sizeof(damage[0]) then
+					if len ~= ffi.sizeof(damage) then
 						-- Should *also* never happen ;p.
 						local errno = C.EINVAL;
 						error(string.format("read: %s", C.strerror(errno)))
 					end
 
 					-- Okay, check that the damage event is actually valid...
-					if damage[0].format == C.DAMAGE_UPDATE_DATA_V1_NTX or
-					   damage[0].format == C.DAMAGE_UPDATE_DATA_V1 or
-					   damage[0].format == C.DAMAGE_UPDATE_DATA_V2 then
+					if damage.format == C.DAMAGE_UPDATE_DATA_V1_NTX or
+					   damage.format == C.DAMAGE_UPDATE_DATA_V1 or
+					   damage.format == C.DAMAGE_UPDATE_DATA_V2 then
 						-- Then, check that it isn't our own damage event...
-						if not self.damage_marker or self.damage_marker and damage[0].data.update_marker ~= self.damage_marker then
+						if not self.damage_marker or self.damage_marker and damage.data.update_marker ~= self.damage_marker then
 							-- TODO: Damage area check
 							print("Updating clock")
 							self:displayClock()
