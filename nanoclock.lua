@@ -24,6 +24,7 @@ require("ffi/posix_h")
 -- TODO: For nightmode flag detection
 --require("ffi/mxcfb_h")
 
+-- FIXME: Mangle package loading so I can keep this in lib/
 local lfs = require("lfs")
 local util = require("lib/util")
 local INIFile = require("lib/inifile")
