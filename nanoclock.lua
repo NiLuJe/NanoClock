@@ -40,7 +40,7 @@ local INIFile = require("inifile")
 local FBInk = ffi.load("lib/libfbink.so.1.0.0")
 
 local NanoClock = {
-	temp_folder = "/tmp/NanoClock",
+	temp_folder = "/tmp/NanoClock", -- FIXME: probably won't need that, we have lfs to handle stat calls.
 	data_folder = "/usr/local/NanoClock",
 	addon_folder = "/mnt/onboard/.adds/nanoclock",
 	config_file = "nanoclock.ini",
