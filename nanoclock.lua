@@ -37,6 +37,10 @@ local NanoClock = {
 	addon_folder = "/mnt/onboard/.adds/nanoclock",
 	config_file = "nanoclock.ini",
 	nickel_config = "/mnt/onboard/.kobo/Kobo/Kobo eReader.conf",
+
+	-- State tracking
+	damage_marker = 0,
+	--damage_area = Geom:new{x = 0, y = 0, w = 0, h = 0},
 }
 
 function NanoClock:init()
@@ -150,7 +154,7 @@ function NanoClock:waitForEvent()
 					   damage.format == C.DAMAGE_UPDATE_DATA_V1 or
 					   damage.format == C.DAMAGE_UPDATE_DATA_V2 then
 						-- Then, check that it isn't our own damage event...
-						if not self.damage_marker or self.damage_marker and damage.data.update_marker ~= self.damage_marker then
+						if damage.data.update_marker ~= self.damage_marker then
 							-- TODO: Damage area check
 							print("Updating clock")
 							self:displayClock()
