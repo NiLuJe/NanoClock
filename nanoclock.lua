@@ -33,7 +33,6 @@ package.cpath =
     "lib/?.so;" ..
     package.cpath
 
--- FIXME: Mangle package loading so I can keep this in lib/
 local lfs = require("lfs")
 local util = require("util")
 local Geom = require("geometry")
