@@ -49,7 +49,7 @@ local NanoClock = {
 
 	-- State tracking
 	damage_marker = 0,
-	damage_area = Geom:new{x = 0, y = 0, w = 0, h = 0},
+	damage_area = Geom:new{x = 0, y = 0, w = math.huge, h = math.huge},
 }
 
 function NanoClock:init()
@@ -79,6 +79,8 @@ function NanoClock:initFBInk()
 	if FBInk.fbink_init(self.fbink_fd, self.fbink_cfg) < 0 then
 		error("Failed to initialize FBInk, aborting . . .")
 	end
+
+	-- TODO: Do a state dump and store the platform to be able to lookup frontlight via sysfs on Mk. 7?
 end
 
 function NanoClock:initDamage()
@@ -111,10 +113,15 @@ function NanoClock:displayClock()
 
 	-- Remember our damage area to detect if we actually need to repaint
 	local rect = FBInk.fbink_get_last_rect()
-	self.damage_area.x = rect.left
-	self.damage_area.y = rect.top
-	self.damage_area.w = rect.width
-	self.damage_area.h = rect.height
+	-- We might get an empty rectangle if the previous update failed,
+	-- and we *never* want to store an empty rectangle in self.damage_area,
+	-- because nothing can ever intersect with it, which breaks the area check ;).
+	if rect.width > 0 and rect.height > 0 then
+		self.damage_area.x = rect.left
+		self.damage_area.y = rect.top
+		self.damage_area.w = rect.width
+		self.damage_area.h = rect.height
+	end
 end
 
 function NanoClock:waitForEvent()
