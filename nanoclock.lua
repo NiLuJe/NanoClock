@@ -20,7 +20,6 @@ local C = ffi.C
 
 require("ffi/fbink_h")
 require("ffi/mxcfb_damage_h")
--- TODO: add openlog/syslog/closelog
 require("ffi/posix_h")
 -- TODO: nightmode flag detection
 require("ffi/mxcfb_h")

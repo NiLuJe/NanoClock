@@ -12,10 +12,9 @@ Example:
     logger.err("House is on fire!")
 ]]
 
-local dump = require("dump")
-local isAndroid, android = pcall(require, "android")
-
-local DEFAULT_DUMP_LVL = 10
+local ffi = require("ffi")
+local C = ffi.C
+require("ffi/posix_h")
 
 --- Supported logging levels
 -- @table Logger.levels
@@ -24,17 +23,12 @@ local DEFAULT_DUMP_LVL = 10
 -- @field warn warning
 -- @field err error
 local LOG_LVL = {
-    dbg = 1,
-    info = 2,
-    warn = 3,
-    err = 4,
-}
-
-local LOG_PREFIX = {
-    dbg = 'DEBUG',
-    info = 'INFO ',
-    warn = 'WARN ',
-    err = 'ERROR',
+    dbg = C.LOG_DEBUG,
+    notice = C.LOG_NOTICE,
+    info = C.LOG_INFO,
+    warn = C.LOG_WARNING,
+    err = C.LOG_ERR,
+    crit = C.LOG_CRIT,
 }
 
 local noop = function() end
@@ -43,41 +37,22 @@ local Logger = {
     levels = LOG_LVL,
 }
 
-local function log(log_lvl, dump_lvl, ...)
-    local line = ""
-    for i,v in ipairs({...}) do
-        if type(v) == "table" then
-            line = line .. " " .. dump(v, dump_lvl)
-        else
-            line = line .. " " .. tostring(v)
-        end
-    end
-    if isAndroid then
-        if log_lvl == "dbg" then
-            android.LOGV(line)
-        elseif log_lvl == "info" then
-            android.LOGI(line)
-        elseif log_lvl == "warn" then
-            android.LOGW(line)
-        elseif log_lvl == "err" then
-            android.LOGE(line)
-        end
-    else
-        io.stdout:write(os.date("%x-%X"), " ", LOG_PREFIX[log_lvl], line, "\n")
-        io.stdout:flush()
-    end
+local function log(prio, ...)
+    C.syslog(prio, ...)
 end
 
 local LVL_FUNCTIONS = {
-    dbg = function(...) log('dbg', DEFAULT_DUMP_LVL, ...) end,
-    info = function(...) log('info', DEFAULT_DUMP_LVL, ...) end,
-    warn = function(...) log('warn', DEFAULT_DUMP_LVL, ...) end,
-    err = function(...) log('err', DEFAULT_DUMP_LVL, ...) end,
+    dbg = function(...) log(LOG_LVL.dbg, ...) end,
+    notice = function(...) log(LOG_LVL.notice, ...) end,
+    info = function(...) log(LOG_LVL.info, ...) end,
+    warn = function(...) log(LOG_LVL.warn, ...) end,
+    err = function(...) log(LOG_LVL.err, ...) end,
+    crit = function(...) log(LOG_LVL.crit, ...) end,
 }
 
 
 --[[--
-Set logging level. By default, level is set to info.
+Set logging level. By default, level is set to notice.
 
 @int new_lvl new logging level, must be one of the levels from @{Logger.levels}
 
@@ -94,6 +69,6 @@ function Logger:setLevel(new_lvl)
     end
 end
 
-Logger:setLevel(LOG_LVL.info)
+Logger:setLevel(LOG_LVL.notice)
 
 return Logger
