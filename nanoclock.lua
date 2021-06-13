@@ -44,8 +44,8 @@ local NanoClock = {
 	nickel_config = "/mnt/onboard/.kobo/Kobo/Kobo eReader.conf",
 
 	-- State tracking
-	damage_marker = 0,
-	damage_area = Geom:new{x = 0, y = 0, w = math.huge, h = math.huge},
+	clock_marker = 0,
+	clock_area = Geom:new{x = 0, y = 0, w = math.huge, h = math.huge},
 	config_mtime = 0,
 }
 
@@ -200,8 +200,8 @@ function NanoClock:displayClock()
 	end
 
 	-- Remember our marker to be able to ignore its damage event, otherwise we'd be stuck in an infinite loop ;).
-	self.damage_marker = FBInk.fbink_get_last_marker()
-	logger.dbg("Updated clock marker to: %s", tostring(self.damage_marker))
+	self.clock_marker = FBInk.fbink_get_last_marker()
+	logger.dbg("Updated clock marker to: %s", tostring(self.clock_marker))
 
 	-- Remember our damage area to detect if we actually need to repaint
 	local rect = FBInk.fbink_get_last_rect()
@@ -209,10 +209,10 @@ function NanoClock:displayClock()
 	-- and we *never* want to store an empty rectangle in self.damage_area,
 	-- because nothing can ever intersect with it, which breaks the area check ;).
 	if rect.width > 0 and rect.height > 0 then
-		self.damage_area.x = rect.left
-		self.damage_area.y = rect.top
-		self.damage_area.w = rect.width
-		self.damage_area.h = rect.height
+		self.clock_area.x = rect.left
+		self.clock_area.y = rect.top
+		self.clock_area.w = rect.width
+		self.clock_area.h = rect.height
 	end
 end
 
@@ -268,7 +268,7 @@ function NanoClock:waitForEvent()
 					   damage.format == C.DAMAGE_UPDATE_DATA_V1 or
 					   damage.format == C.DAMAGE_UPDATE_DATA_V2) then
 						-- Then, check that it isn't our own damage event...
-						if damage.data.update_marker ~= self.damage_marker then
+						if damage.data.update_marker ~= self.clock_marker then
 							-- Then, that it actually drew over our clock...
 							local update_area = Geom:new{
 								x = damage.data.update_region.left,
@@ -276,14 +276,14 @@ function NanoClock:waitForEvent()
 								w = damage.data.update_region.width,
 								h = damage.data.update_region.height,
 							}
-							if update_area:intersectWith(self.damage_area) then
+							if update_area:intersectWith(self.clock_area) then
 								logger.dbg("Updating clock (damage marker: %s vs. clock marker: %s)",
 								           tostring(damage.data.update_marker),
-								           tostring(self.damage_marker))
+								           tostring(self.clock_marker))
 								self:displayClock()
 							else
 								logger.dbg("No clock update required: %s does not intersect with %s",
-								           tostring(update_area), tostring(self.damage_area))
+								           tostring(update_area), tostring(self.clock_area))
 							end
 						end
 					else
