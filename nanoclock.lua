@@ -45,6 +45,7 @@ local NanoClock = {
 
 	-- State tracking
 	clock_marker = 0,
+	marker_found = false,
 	clock_area = Geom:new{x = 0, y = 0, w = math.huge, h = math.huge},
 	config_mtime = 0,
 }
@@ -201,6 +202,8 @@ function NanoClock:displayClock()
 	-- Remember our marker to be able to ignore its damage event, otherwise we'd be stuck in an infinite loop ;).
 	self.clock_marker = FBInk.fbink_get_last_marker()
 	logger.dbg("Updated clock marker to: %u", ffi.cast("unsigned int", self.clock_marker))
+	-- Reset the damage tracker
+	self.marker_found = false
 
 	-- Remember our damage area to detect if we actually need to repaint
 	local rect = FBInk.fbink_get_last_rect()
@@ -259,40 +262,47 @@ function NanoClock:waitForEvent()
 						self:die(string.format("read: %s", C.strerror(errno)))
 					end
 
-					-- Okay, check that we're not iterating over stale events
-					-- (i.e., we only care about the most recent event in the queue),
-					-- and that the damage event is actually valid.
-					if damage.queue_size == 1 and
-					   (damage.format == C.DAMAGE_UPDATE_DATA_V1_NTX or
+					-- Okay, check that weiterating over a valid event.
+					if damage.format == C.DAMAGE_UPDATE_DATA_V1_NTX or
 					   damage.format == C.DAMAGE_UPDATE_DATA_V1 or
-					   damage.format == C.DAMAGE_UPDATE_DATA_V2) then
-						-- Then, check that it isn't our own damage event...
-						if damage.data.update_marker ~= self.clock_marker then
-							-- Then, that it actually drew over our clock...
-							local update_area = Geom:new{
-								x = damage.data.update_region.left,
-								y = damage.data.update_region.top,
-								w = damage.data.update_region.width,
-								h = damage.data.update_region.height,
-							}
-							if update_area:intersectWith(self.clock_area) then
-								logger.dbg("Updating clock (damage marker: %u vs. clock marker: %u)",
-								           ffi.cast("unsigned int", damage.data.update_marker),
-								           ffi.cast("unsigned int", self.clock_marker))
-								self:displayClock()
-							else
-								logger.dbg("No clock update required: %s does not intersect with %s",
-								           tostring(update_area), tostring(self.clock_area))
-							end
+					   damage.format == C.DAMAGE_UPDATE_DATA_V2 then
+						-- Track our own marker so we can *avoid* reacting to it,
+						-- because that'd result in a neat infinite loop ;).
+						if damage.data.update_marker == self.clock_marker then
+							self.marker_found = true
 						end
-					else
 						if damage.queue_size > 1 then
+							-- We'll never react to anything that isn't the final event in the queue.
 							logger.warn("Stale damage event (%d more ahead)!",
 							            ffi.cast("int", damage.queue_size - 1))
 						else
-							logger.warn("Invalid damage event (format: %d)!",
-							            ffi.cast("int", damage.format))
+							-- Otherwise, check that it is *not* our own damage event,
+							-- *and* that we previously *did* see ours...
+							if self.marker_found and damage.data.update_marker ~= self.clock_marker then
+								-- Then, that it actually drew over our clock...
+								local update_area = Geom:new{
+									x = damage.data.update_region.left,
+									y = damage.data.update_region.top,
+									w = damage.data.update_region.width,
+									h = damage.data.update_region.height,
+								}
+								if update_area:intersectWith(self.clock_area) then
+									logger.dbg("Updating clock")
+									self:displayClock()
+								else
+									logger.dbg("No clock update necessary: %s does not intersect with %s",
+										tostring(update_area), tostring(self.clock_area))
+								end
+							else
+								logger.dbg("No clock update necessary: damage marker: %u vs. clock marker: %u (found: %s)",
+										ffi.cast("unsigned int", damage.data.update_marker),
+										ffi.cast("unsigned int", self.clock_marker),
+										tostring(self.marker_found))
+							end
 						end
+					else
+						logger.warn("Invalid damage event (format: %d)!",
+								ffi.cast("int", damage.format))
 					end
 				end
 			end
@@ -305,6 +315,9 @@ function NanoClock:main()
 	self:initFBInk()
 	self:initDamage()
 	self:initConfig()
+
+	-- Display the clock once on startup, so that we start with a sane clock marker & area
+	self:displayClock()
 
 	-- Main loop
 	self:waitForEvent()
