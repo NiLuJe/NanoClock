@@ -10,7 +10,8 @@
 --]]
 
 -- TODO: Shell wrapper to handle udev workarounds, wait_for_nickel & the Aura FW check
---       And, of course, the kernel module loading. Probably going to need a minimal cli fbink build to handle the PLATFORM detect.
+--       And, of course, the kernel module loading.
+--       Probably going to need a minimal cli fbink build to handle the PLATFORM detect.
 local bit = require("bit")
 local ffi = require("ffi")
 local C = ffi.C
@@ -51,7 +52,7 @@ local NanoClock = {
 function NanoClock:die(msg)
 	logger.crit(msg)
 	self:fini()
-	error(crit)
+	error(msg)
 end
 
 function NanoClock:init()
@@ -116,6 +117,20 @@ end
 
 function NanoClock:displayClock()
 	self:prepareClock()
+
+	-- We need to handle potential changes in the framebuffer format/layout...
+	local reinit = FBInk.fbink_reinit(self.fbink_fd, self.fbink_cfg)
+	if reinit > 0 then
+		if bit.band(reinit, C.OK_BPP_CHANGE) then
+			logger.notice("Handled a framebuffer bitdepth change")
+		end
+
+		if bit.band(reinit, C.OK_LAYOUT_CHANGE) then
+			logger.notice("Handled a framebuffer orientation change")
+		elseif bit.band(reinit, C.OK_ROTA_CHANGE) then
+			logger.notice("Handled a framebuffer rotation change")
+		end
+	end
 
 	-- TODO: Actually honor settings ;p.
 	FBInk.fbink_print(self.fbink_fd, self.clock_string, self.fbink_cfg)
@@ -197,7 +212,8 @@ function NanoClock:waitForEvent()
 								logger.dbg("Updating clock")
 								self:displayClock()
 							else
-								logger.dbg("No clock update required: %s does not intersect with %s", tostring(update_area), tostring(self.damage_area))
+								logger.dbg("No clock update required: %s does not intersect with %s",
+								           tostring(update_area), tostring(self.damage_area))
 							end
 						end
 					else
