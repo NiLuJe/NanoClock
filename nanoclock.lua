@@ -52,6 +52,9 @@ local NanoClock = {
 }
 
 function NanoClock:init()
+	-- Setup logging
+	C.openlog("nanoclock", bit.band(C.LOG_CONS, C.LOG_PID, C.LOG_NDELAY), C.LOG_DAEMON)
+
 	self.config_path = self.addon_folder .. "/" .. self.config_file
 
 	-- If we don't have a custom config file, copy the defaults
@@ -212,6 +215,7 @@ end
 function NanoClock:fini()
 	FBInk.fbink_close(self.fbink_fd)
 	C.close(self.damage_fd)
+	C.closelog()
 end
 
 return NanoClock:main()
