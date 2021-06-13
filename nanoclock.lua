@@ -196,7 +196,7 @@ function NanoClock:displayClock()
 	-- TODO: Actually honor settings ;p.
 	local ret = FBInk.fbink_print(self.fbink_fd, self.clock_string, self.fbink_cfg)
 	if ret < 0 then
-		logger.warn("FBInk failed to display the string", self.clock_string)
+		logger.warn("FBInk failed to display the string `%s`", self.clock_string)
 	end
 
 	-- Remember our marker to be able to ignore its damage event, otherwise we'd be stuck in an infinite loop ;).
