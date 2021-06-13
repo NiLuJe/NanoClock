@@ -205,7 +205,7 @@ function NanoClock:displayClock()
 		--       but a failure means we'll potentially never have a chance to *ever* catch a damage event for it,
 		--       depending on where in the chain of events the failure happened.
 		--       (i.e., if it's actually the *ioctl* that failed, we *would* catch it,
-		--       but any earlier and there won't be any ioctl at all ;)).
+		--       but any earlier and there won't be any ioctl at all, so no damage event for us ;)).
 		-- In any case, we don't want to get stuck in a display loop in case of failures,
 		-- so always resetting the damage tracking makes sense.
 		-- We simply force a clock display when we reload the config,
