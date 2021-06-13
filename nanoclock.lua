@@ -146,12 +146,11 @@ function NanoClock:sanitizeConfig()
 	-- Fill in anything that's missing in the user config with the defaults.
 	for section, st in pairs(self.defaults) do
 		if self.cfg[section] == nil then
-			self.cfg[section] = st
-		else
-			for k, v in pairs(st) do
-				if self.cfg[section][k] == nil then
-					self.cfg[section][k] = v
-				end
+			self.cfg[section] = {}
+		end
+		for k, v in pairs(st) do
+			if self.cfg[section][k] == nil then
+				self.cfg[section][k] = v
 			end
 		end
 	end
