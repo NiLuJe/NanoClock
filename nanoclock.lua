@@ -38,7 +38,6 @@ local INIFile = require("inifile")
 local FBInk = ffi.load("lib/libfbink.so.1.0.0")
 
 local NanoClock = {
-	temp_folder = "/tmp/NanoClock", -- FIXME: probably won't need that, we have lfs to handle stat calls.
 	data_folder = "/usr/local/NanoClock",
 	addon_folder = "/mnt/onboard/.adds/nanoclock",
 	config_file = "nanoclock.ini",
@@ -47,6 +46,7 @@ local NanoClock = {
 	-- State tracking
 	damage_marker = 0,
 	damage_area = Geom:new{x = 0, y = 0, w = math.huge, h = math.huge},
+	config_mtime = 0,
 }
 
 function NanoClock:die(msg)
@@ -79,11 +79,11 @@ function NanoClock:initFBInk()
 
 	self.fbink_fd = FBInk.fbink_open()
 	if self.fbink_fd == -1 then
-		self:die("Failed to open the framebuffer, aborting . . .")
+		self:die("Failed to open the framebuffer, aborting!")
 	end
 
 	if FBInk.fbink_init(self.fbink_fd, self.fbink_cfg) < 0 then
-		self:die("Failed to initialize FBInk, aborting . . .")
+		self:die("Failed to initialize FBInk, aborting!")
 	end
 
 	-- TODO: Do a state dump and store the platform to be able to lookup frontlight via sysfs on Mk. 7?
@@ -92,12 +92,32 @@ end
 function NanoClock:initDamage()
 	self.damage_fd = C.open("/dev/fbdamage", bit.bor(C.O_RDONLY, C.O_NONBLOCK, C.O_CLOEXEC))
 	if self.damage_fd == -1 then
-		self:die("Failed to open the fbdamage device, aborting . . .")
+		self:die("Failed to open the fbdamage device, aborting!")
 	end
 end
 
 function NanoClock:reloadConfig()
-	-- TODO: ts check
+	-- Reload the config if it was modified since the last time we parsed it...
+	local config_mtime = lfs.attributes(self.config_path, "modification")
+	if not config_mtime then
+		-- Can't file the config file, is onboard currently unmounted? (USBMS?)
+		if not self.cfg then
+			-- Can't find the config file *and* we never parsed it?
+			-- This should never happen, as the startup script should have ensured onboard is mounted by now...
+			self:die("Config file is missing, aborting!")
+		end
+
+		-- Otherwise, we're done for now ;)
+		return
+	end
+
+	if config_mtime == self.config_mtime then
+		-- No change, we're done
+		return
+	else
+		self.config_mtime = config_mtime
+	end
+
 	self.cfg = INIFile.parse(self.config_path)
 
 	-- Was debug logging requested?
