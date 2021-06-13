@@ -21,4 +21,27 @@ function util.copyFile(from, to)
     tfp:close()
 end
 
+--- Read single-line files (e.g., sysfs)
+function util.read_int_file(file)
+    local fd = io.open(file, "r")
+    if fd then
+        local int = fd:read("*number")
+        fd:close()
+        return int or 0
+    else
+        return 0
+    end
+end
+
+function util.read_str_file(file)
+    local fd = io.open(file, "r")
+    if fd then
+        local str = fd:read("*line")
+        fd:close()
+        return str
+    else
+        return ""
+    end
+end
+
 return util

@@ -72,6 +72,12 @@ function NanoClock:init()
 
 		util.copyFile(self.defaults_path, self.config_path)
 	end
+
+	-- TODO: Bake it at make time via git describe
+	self.version = util.read_str_file(self.data_folder .. "/etc/VERSION")
+	if self.version == "" then
+		self.version = "vDEV"
+	end
 end
 
 function NanoClock:initFBInk()
@@ -326,7 +332,7 @@ function NanoClock:waitForEvent()
 								if update_area:intersectWith(self.clock_area) then
 									self:displayClock()
 								else
-									logger.dbg("No clock update necessary: %s does not intersect with %s",
+									logger.dbg("No clock update necessary: damage rectangle %s does not intersect with the clock's %s",
 										tostring(update_area), tostring(self.clock_area))
 								end
 							else
@@ -340,7 +346,7 @@ function NanoClock:waitForEvent()
 								--       in which case we'd just have to stick a :displayClock() at the end of :reloadConfig() ;).
 								if self.print_failed then
 									if self:reloadConfig() then
-										logger.notice("Previous clock update failed, but config was modified, trying again")
+										logger.notice("Previous clock update failed, but config was modified since, trying again")
 										self:displayClock()
 									end
 								end
@@ -362,6 +368,7 @@ function NanoClock:main()
 	self:initFBInk()
 	self:initDamage()
 	self:initConfig()
+	logger.info("Initialized NanoClock %s with FBInk %s", self.version, FBInk.fbink_version())
 
 	-- Display the clock once on startup, so that we start with sane clock marker & area tracking
 	self:displayClock()
