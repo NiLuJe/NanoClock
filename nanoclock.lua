@@ -131,6 +131,8 @@ function NanoClock:initConfig()
 	self.cfg = INIFile.parse(self.config_path)
 
 	self:sanitizeConfig()
+
+	self:handleConfig()
 end
 
 function NanoClock:reloadConfig()
@@ -152,15 +154,18 @@ function NanoClock:reloadConfig()
 	logger.notice("Config file was modified, reloading it")
 	self.cfg = INIFile.parse(self.config_path)
 	self:sanitizeConfig()
+	self:handleConfig()
 
+	-- TODO: Honor config :D
+end
+
+function NanoClock:handleConfig()
 	-- Was debug logging requested?
 	if self.cfg.global.debug == 0 then
 		logger:setLevel(logger.levels.info)
 	else
 		logger:setLevel(logger.levels.dbg)
 	end
-
-	-- TODO: Honor config :D
 end
 
 function NanoClock:prepareClock()
