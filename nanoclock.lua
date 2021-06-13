@@ -201,6 +201,7 @@ function NanoClock:displayClock()
 
 	-- Remember our marker to be able to ignore its damage event, otherwise we'd be stuck in an infinite loop ;).
 	self.damage_marker = FBInk.fbink_get_last_marker()
+	logger.dbg("Updated clock marker to: %s", tostring(self.damage_marker))
 
 	-- Remember our damage area to detect if we actually need to repaint
 	local rect = FBInk.fbink_get_last_rect()
@@ -259,10 +260,11 @@ function NanoClock:waitForEvent()
 						self:die(string.format("read: %s", C.strerror(errno)))
 					end
 
-					-- Okay, check that the damage event is actually valid...
-					if damage.format == C.DAMAGE_UPDATE_DATA_V1_NTX or
+					-- Okay, check that the damage event is actually valid, and that there was no overflow...
+					if damage.overflow_notify == 0 and
+					   (damage.format == C.DAMAGE_UPDATE_DATA_V1_NTX or
 					   damage.format == C.DAMAGE_UPDATE_DATA_V1 or
-					   damage.format == C.DAMAGE_UPDATE_DATA_V2 then
+					   damage.format == C.DAMAGE_UPDATE_DATA_V2) then
 						-- Then, check that it isn't our own damage event...
 						if damage.data.update_marker ~= self.damage_marker then
 							-- Then, that it actually drew over our clock...
@@ -273,7 +275,9 @@ function NanoClock:waitForEvent()
 								h = damage.data.update_region.height,
 							}
 							if update_area:intersectWith(self.damage_area) then
-								logger.dbg("Updating clock")
+								logger.dbg("Updating clock (damage marker: %s vs. clock marker: %s)",
+								           tostring(damage.data.update_marker),
+								           tostring(self.damage_marker))
 								self:displayClock()
 							else
 								logger.dbg("No clock update required: %s does not intersect with %s",
