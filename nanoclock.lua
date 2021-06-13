@@ -289,6 +289,8 @@ function NanoClock:waitForEvent()
 
 						-- If there was an overflow, we may *never* find our previous clock marker,
 						-- so remember that so we can deal with it once we're caught up...
+						-- (An overflow obviously implies that we've got a full queue ahead of us,
+						-- i.e., queue_size == 63).
 						if damage.overflow_notify > 0 then
 							logger.notice("Damage event queue overflow! %d events have been lost!",
 							              ffi.cast("int", damage.overflow_notify))
