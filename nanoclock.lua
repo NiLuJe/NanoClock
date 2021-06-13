@@ -155,8 +155,6 @@ function NanoClock:reloadConfig()
 	self.cfg = INIFile.parse(self.config_path)
 	self:sanitizeConfig()
 	self:handleConfig()
-
-	-- TODO: Honor config :D
 end
 
 function NanoClock:handleConfig()
@@ -166,6 +164,8 @@ function NanoClock:handleConfig()
 	else
 		logger:setLevel(logger.levels.dbg)
 	end
+
+	-- TODO: Honor config :D
 end
 
 function NanoClock:prepareClock()
