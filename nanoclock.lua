@@ -236,6 +236,7 @@ function NanoClock:waitForEvent()
 		if poll_num > 0 then
 			if bit.band(pfd.revents, C.POLLIN) then
 				local damage = ffi.new("mxcfb_damage_update")
+				local overflowed = false
 
 				while true do
 					local len = C.read(self.damage_fd, damage, ffi.sizeof(damage))
@@ -271,11 +272,28 @@ function NanoClock:waitForEvent()
 						if damage.data.update_marker == self.clock_marker then
 							self.marker_found = true
 						end
+
+						-- If there was an overflow, we may *never* find our previous clock marker,
+						-- so remember that so we can deal with it once we're caught up...
+						if damage.overflow_notify > 0 then
+							logger.notice("Damage event queue overflow! %d events have been lost!",
+							              ffi.cast(int, damage.overflow_notify))
+							overflowed = true
+						end
+
 						if damage.queue_size > 1 then
 							-- We'll never react to anything that isn't the final event in the queue.
 							logger.warn("Stale damage event (%d more ahead)!",
 							            ffi.cast("int", damage.queue_size - 1))
 						else
+							-- If we're at the end of the queue *after* an overflow,
+							-- assume we actually caught our own marker,
+							-- as it might have been lost.
+							if overflowed then
+								self.marker_found = true
+								overflowed = false
+							end
+
 							-- Otherwise, check that it is *not* our own damage event,
 							-- *and* that we previously *did* see ours...
 							if self.marker_found and damage.data.update_marker ~= self.clock_marker then
