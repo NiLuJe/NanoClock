@@ -100,21 +100,6 @@ function NanoClock:initDamage()
 	end
 end
 
-function NanoClock:sanitizeConfig()
-	-- Fill in anything that's missing in the user config with the defaults.
-	for section, st in pairs(self.defaults) do
-		if self.cfg[section] == nil then
-			self.cfg[section] = st
-		else
-			for k, v in pairs(st) do
-				if self.cfg[section][k] == nil then
-					self.cfg[section][k] = v
-				end
-			end
-		end
-	end
-end
-
 function NanoClock:initConfig()
 	local config_mtime = lfs.attributes(self.config_path, "modification")
 	if not config_mtime then
@@ -155,6 +140,21 @@ function NanoClock:reloadConfig()
 	self.cfg = INIFile.parse(self.config_path)
 	self:sanitizeConfig()
 	self:handleConfig()
+end
+
+function NanoClock:sanitizeConfig()
+	-- Fill in anything that's missing in the user config with the defaults.
+	for section, st in pairs(self.defaults) do
+		if self.cfg[section] == nil then
+			self.cfg[section] = st
+		else
+			for k, v in pairs(st) do
+				if self.cfg[section][k] == nil then
+					self.cfg[section][k] = v
+				end
+			end
+		end
+	end
 end
 
 function NanoClock:handleConfig()
