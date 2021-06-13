@@ -23,6 +23,16 @@ require("ffi/posix_h")
 -- @field warn warning
 -- @field err error
 local LOG_LVL = {
+    dbg = 1,
+    notice = 2,
+    info = 3,
+    warn = 4,
+    err = 5,
+    crit = 6,
+}
+
+-- And their actual prio value sys syslog
+local LOG_PRIO = {
     dbg = C.LOG_DEBUG,
     notice = C.LOG_NOTICE,
     info = C.LOG_INFO,
@@ -42,14 +52,13 @@ local function log(prio, ...)
 end
 
 local LVL_FUNCTIONS = {
-    dbg = function(...) log(LOG_LVL.dbg, ...) end,
-    notice = function(...) log(LOG_LVL.notice, ...) end,
-    info = function(...) log(LOG_LVL.info, ...) end,
-    warn = function(...) log(LOG_LVL.warn, ...) end,
-    err = function(...) log(LOG_LVL.err, ...) end,
-    crit = function(...) log(LOG_LVL.crit, ...) end,
+    dbg = function(...) log(LOG_PRIO.dbg, ...) end,
+    notice = function(...) log(LOG_PRIO.notice, ...) end,
+    info = function(...) log(LOG_PRIO.info, ...) end,
+    warn = function(...) log(LOG_PRIO.warn, ...) end,
+    err = function(...) log(LOG_PRIO.err, ...) end,
+    crit = function(...) log(LOG_PRIO.crit, ...) end,
 }
-
 
 --[[--
 Set logging level. By default, level is set to notice.
