@@ -197,7 +197,7 @@ function NanoClock:waitForEvent()
 								logger.dbg("Updating clock")
 								self:displayClock()
 							else
-								logger.dbg(string.format("No clock update required: %s does not intersect with %s", tostring(update_area), tostring(self.damage_area)))
+								logger.dbg("No clock update required: %s does not intersect with %s", tostring(update_area), tostring(self.damage_area))
 							end
 						end
 					else
