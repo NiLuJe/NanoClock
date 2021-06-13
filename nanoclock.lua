@@ -201,7 +201,7 @@ function NanoClock:displayClock()
 
 	-- Remember our marker to be able to ignore its damage event, otherwise we'd be stuck in an infinite loop ;).
 	self.clock_marker = FBInk.fbink_get_last_marker()
-	logger.dbg("Updated clock marker to: %u", ffi.cast("unsigned int", self.clock_marker))
+	logger.dbg("Updated clock (marker: %u)", ffi.cast("unsigned int", self.clock_marker))
 	-- Reset the damage tracker
 	self.marker_found = false
 
@@ -277,7 +277,7 @@ function NanoClock:waitForEvent()
 						-- so remember that so we can deal with it once we're caught up...
 						if damage.overflow_notify > 0 then
 							logger.notice("Damage event queue overflow! %d events have been lost!",
-							              ffi.cast(int, damage.overflow_notify))
+							              ffi.cast("int", damage.overflow_notify))
 							overflowed = true
 						end
 
@@ -305,7 +305,6 @@ function NanoClock:waitForEvent()
 									h = damage.data.update_region.height,
 								}
 								if update_area:intersectWith(self.clock_area) then
-									logger.dbg("Updating clock")
 									self:displayClock()
 								else
 									logger.dbg("No clock update necessary: %s does not intersect with %s",
