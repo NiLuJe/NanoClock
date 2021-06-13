@@ -1,4 +1,4 @@
-#! /mnt/onboard/.adds/koreader/luajit
+#! ./bin/luajit
 -- FIXME: Build & bundle LuaJIT, luafilesystem & FBInk ourselves.
 
 --[[
@@ -200,7 +200,7 @@ function NanoClock:displayClock()
 
 	-- Remember our marker to be able to ignore its damage event, otherwise we'd be stuck in an infinite loop ;).
 	self.clock_marker = FBInk.fbink_get_last_marker()
-	logger.dbg("Updated clock marker to: %s", tostring(self.clock_marker))
+	logger.dbg("Updated clock marker to: %u", ffi.cast("unsigned int", self.clock_marker))
 
 	-- Remember our damage area to detect if we actually need to repaint
 	local rect = FBInk.fbink_get_last_rect()
@@ -276,9 +276,9 @@ function NanoClock:waitForEvent()
 								h = damage.data.update_region.height,
 							}
 							if update_area:intersectWith(self.clock_area) then
-								logger.dbg("Updating clock (damage marker: %s vs. clock marker: %s)",
-								           tostring(damage.data.update_marker),
-								           tostring(self.clock_marker))
+								logger.dbg("Updating clock (damage marker: %u vs. clock marker: %u)",
+								           ffi.cast("unsigned int", damage.data.update_marker),
+								           ffi.cast("unsigned int", self.clock_marker))
 								self:displayClock()
 							else
 								logger.dbg("No clock update required: %s does not intersect with %s",
@@ -287,11 +287,11 @@ function NanoClock:waitForEvent()
 						end
 					else
 						if damage.queue_size > 1 then
-							logger.warn("Stale damage event (%s more ahead)!",
-							            tostring(damage.queue_size - 1))
+							logger.warn("Stale damage event (%d more ahead)!",
+							            ffi.cast("int", damage.queue_size - 1))
 						else
-							logger.warn("Invalid damage event (format: %s)!",
-							            tostring(damage.format))
+							logger.warn("Invalid damage event (format: %d)!",
+							            ffi.cast("int", damage.format))
 						end
 					end
 				end
