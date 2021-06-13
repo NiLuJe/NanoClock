@@ -11,9 +11,6 @@
 
 -- TODO: Shell wrapper to handle udev workarounds, wait_for_nickel & the Aura FW check
 --       And, of course, the kernel module loading. Probably going to need a minimal cli fbink build to handle the PLATFORM detect.
-
--- FIXME: Log to syslog instead of using print & error.
-
 local bit = require("bit")
 local ffi = require("ffi")
 local C = ffi.C
@@ -33,6 +30,7 @@ package.cpath =
     package.cpath
 
 local lfs = require("lfs")
+local logger = require("logger")
 local util = require("util")
 local Geom = require("geometry")
 local INIFile = require("inifile")
@@ -49,6 +47,12 @@ local NanoClock = {
 	damage_marker = 0,
 	damage_area = Geom:new{x = 0, y = 0, w = math.huge, h = math.huge},
 }
+
+function NanoClock:die(msg)
+	logger.crit(msg)
+	self:fini()
+	error(crit)
+end
 
 function NanoClock:init()
 	-- Setup logging
@@ -74,11 +78,11 @@ function NanoClock:initFBInk()
 
 	self.fbink_fd = FBInk.fbink_open()
 	if self.fbink_fd == -1 then
-		error("Failed to open the framebuffer, aborting . . .")
+		self:die("Failed to open the framebuffer, aborting . . .")
 	end
 
 	if FBInk.fbink_init(self.fbink_fd, self.fbink_cfg) < 0 then
-		error("Failed to initialize FBInk, aborting . . .")
+		self:die("Failed to initialize FBInk, aborting . . .")
 	end
 
 	-- TODO: Do a state dump and store the platform to be able to lookup frontlight via sysfs on Mk. 7?
@@ -87,7 +91,7 @@ end
 function NanoClock:initDamage()
 	self.damage_fd = C.open("/dev/fbdamage", bit.bor(C.O_RDONLY, C.O_NONBLOCK, C.O_CLOEXEC))
 	if self.damage_fd == -1 then
-		error("Failed to open the fbdamage device, aborting . . .")
+		self:die("Failed to open the fbdamage device, aborting . . .")
 	end
 end
 
@@ -136,7 +140,7 @@ function NanoClock:waitForEvent()
 		if poll_num == -1 then
 			local errno = ffi.errno()
 			if errno ~= C.EINTR then
-				error(string.format("poll: %s", C.strerror(errno)))
+				self:die(string.format("poll: %s", C.strerror(errno)))
 			end
 		end
 
@@ -154,19 +158,19 @@ function NanoClock:waitForEvent()
 							break
 						end
 
-						error(string.format("read: %s", C.strerror(errno)))
+						self:die(string.format("read: %s", C.strerror(errno)))
 					end
 
 					if len == 0 then
 						-- Should never happen
 						local errno = C.EPIPE;
-						error(string.format("read: %s", C.strerror(errno)))
+						self:die(string.format("read: %s", C.strerror(errno)))
 					end
 
 					if len ~= ffi.sizeof(damage) then
 						-- Should *also* never happen ;p.
 						local errno = C.EINVAL;
-						error(string.format("read: %s", C.strerror(errno)))
+						self:die(string.format("read: %s", C.strerror(errno)))
 					end
 
 					-- Okay, check that the damage event is actually valid...
@@ -212,8 +216,13 @@ function NanoClock:main()
 end
 
 function NanoClock:fini()
-	FBInk.fbink_close(self.fbink_fd)
-	C.close(self.damage_fd)
+	if self.fbink_fd then
+		FBInk.fbink_close(self.fbink_fd)
+	end
+	if self.damage_fd and self.damage_fd ~= -1 then
+		C.close(self.damage_fd)
+	end
+	os.execute("rmmod mxc_epdc_fb_damage")
 	C.closelog()
 end
 
