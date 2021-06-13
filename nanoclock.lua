@@ -101,6 +101,21 @@ function NanoClock:initDamage()
 	end
 end
 
+function NanoClock:sanitizeConfig()
+	-- Fill in anything that's missing in the user config with the defaults.
+	for section, st in pairs(self.defaults) do
+		if self.cfg[section] == nil then
+			self.cfg[section] = st
+		else
+			for k, v in pairs(st) do
+				if self.cfg[section][k] == nil then
+					self.cfg[section][k] = v
+				end
+			end
+		end
+	end
+end
+
 function NanoClock:initConfig()
 	local config_mtime = lfs.attributes(self.config_path, "modification")
 	if not config_mtime then
@@ -112,22 +127,11 @@ function NanoClock:initConfig()
 	self.config_mtime = config_mtime
 
 	-- Start by loading the defaults...
-	local defaults = INIFile.parse(self.defaults_path)
+	self.defaults = INIFile.parse(self.defaults_path)
 	-- Then the user config...
 	self.cfg = INIFile.parse(self.config_path)
 
-	-- Fill in anything that's missing in the user config with the defaults.
-	for section, st in pairs(defaults) do
-		if self.cfg[section] == nil then
-			self.cfg[section] = st
-		else
-			for k, v in pairs(st) do
-				if self.cfg[section][k] == nil then
-					self.cfg[section][k] = v
-				end
-			end
-		end
-	end
+	self:sanitizeConfig()
 end
 
 function NanoClock:reloadConfig()
@@ -148,6 +152,7 @@ function NanoClock:reloadConfig()
 
 	logger.notice("Config file was modified, reloading it")
 	self.cfg = INIFile.parse(self.config_path)
+	self:sanitizeConfig()
 
 	-- Was debug logging requested?
 	if self.cfg.global.debug == 0 then
