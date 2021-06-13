@@ -141,6 +141,9 @@ function NanoClock:reloadConfig()
 	self.cfg = INIFile.parse(self.config_path)
 	self:sanitizeConfig()
 	self:handleConfig()
+
+	-- Force a clock refresh, to be able to recover from config-induced display failures...
+	self:displayClock()
 end
 
 function NanoClock:sanitizeConfig()
@@ -197,21 +200,24 @@ function NanoClock:displayClock()
 	local ret = FBInk.fbink_print(self.fbink_fd, self.clock_string, self.fbink_cfg)
 	if ret < 0 then
 		logger.warn("FBInk failed to display the string `%s`", self.clock_string)
-	else
+
 		-- NOTE: On failure, FBInk's own marker will have incremented,
-		--       but a a failure means we'll potentially never have a chance to *ever* caught a damage event for it,
+		--       but a failure means we'll potentially never have a chance to *ever* catch a damage event for it,
 		--       depending on where in the chain of events the failure happened.
 		--       (i.e., if it's actually the *ioctl* that failed, we *would* catch it,
 		--       but any earlier and there won't be any ioctl at all ;)).
-		--       TL;DR: Only update the marker tracking on *success*.
-
-		-- Remember our marker to be able to ignore its damage event, otherwise we'd be stuck in an infinite loop ;).
-		-- c.f., the whole logic in :waitForEvent().
-		self.clock_marker = FBInk.fbink_get_last_marker()
-		logger.dbg("Updated clock (marker: %u)", ffi.cast("unsigned int", self.clock_marker))
-		-- Reset the damage tracker
-		self.marker_found = false
+		-- In any case, we don't want to get stuck in a display loop in case of failures,
+		-- so always resetting the damage tracking makes sense.
+		-- We simply force a clock display when we reload the config,
+		-- allowing to user to recover if the failure stems from a config snafu...
 	end
+
+	-- Remember our marker to be able to ignore its damage event, otherwise we'd be stuck in an infinite loop ;).
+	-- c.f., the whole logic in :waitForEvent().
+	self.clock_marker = FBInk.fbink_get_last_marker()
+	logger.dbg("Updated clock (marker: %u)", ffi.cast("unsigned int", self.clock_marker))
+	-- Reset the damage tracker
+	self.marker_found = false
 
 	-- Remember our damage area to detect if we actually need to repaint
 	local rect = FBInk.fbink_get_last_rect()
