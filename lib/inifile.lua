@@ -34,26 +34,11 @@ local inifile = {
 	]] -- The above license is known as the Simplified BSD license.
 }
 
-local defaultBackend = "io"
-
-local backends = {
-	io = {
-		lines = function(name) return assert(io.open(name)):lines() end,
-		write = function(name, contents) assert(io.open(name, "w")):write(contents) end,
-	},
-	memory = {
-		lines = function(text) return text:gmatch("([^\r\n]+)\r?\n") end,
-		write = function(name, contents) return contents end,
-	},
-}
-
-function inifile.parse(name, backend)
-	backend = backend or defaultBackend
+function inifile.parse(name)
 	local t = {}
 	local section
 
-	for line in backends[backend].lines(name) do
-
+	for line in io.lines(name) do
 		-- Section headers
 		local s = line:match("^%[([^%]]+)%]$")
 		if s then
