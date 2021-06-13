@@ -260,8 +260,10 @@ function NanoClock:waitForEvent()
 						self:die(string.format("read: %s", C.strerror(errno)))
 					end
 
-					-- Okay, check that the damage event is actually valid, and that there was no overflow...
-					if damage.overflow_notify == 0 and
+					-- Okay, check that we're not iterating over stale events
+					-- (i.e., we only care about the most recent event in the queue),
+					-- and that the damage event is actually valid.
+					if damage.queue_size == 1 and
 					   (damage.format == C.DAMAGE_UPDATE_DATA_V1_NTX or
 					   damage.format == C.DAMAGE_UPDATE_DATA_V1 or
 					   damage.format == C.DAMAGE_UPDATE_DATA_V2) then
@@ -285,7 +287,13 @@ function NanoClock:waitForEvent()
 							end
 						end
 					else
-						logger.warn("Invalid damage event!")
+						if damage.queue_size > 1 then
+							logger.warn("Stale damage event (%s more ahead)!",
+							            tostring(damage.queue_size - 1))
+						else
+							logger.warn("Invalid damage event (format: %s)!",
+							            tostring(damage.format))
+						end
 					end
 				end
 			end

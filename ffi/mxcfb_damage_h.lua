@@ -34,6 +34,7 @@ typedef struct {
 } mxcfb_damage_data;
 typedef struct {
   int overflow_notify;
+  int queue_size;
   mxcfb_damage_data_format format;
   uint64_t timestamp;
   mxcfb_damage_data data;
