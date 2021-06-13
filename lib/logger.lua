@@ -20,22 +20,13 @@ require("ffi/posix_h")
 -- @table Logger.levels
 -- @field dbg debug
 -- @field info informational (default level)
+-- @field notice normal, but significant
 -- @field warn warning
 -- @field err error
-local LOG_LVL = {
-    dbg = 1,
-    notice = 2,
-    info = 3,
-    warn = 4,
-    err = 5,
-    crit = 6,
-}
-
--- And their actual prio value sys syslog
 local LOG_PRIO = {
     dbg = C.LOG_DEBUG,
-    notice = C.LOG_NOTICE,
     info = C.LOG_INFO,
+    notice = C.LOG_NOTICE,
     warn = C.LOG_WARNING,
     err = C.LOG_ERR,
     crit = C.LOG_CRIT,
@@ -44,7 +35,7 @@ local LOG_PRIO = {
 local noop = function() end
 
 local Logger = {
-    levels = LOG_LVL,
+    levels = LOG_PRIO,
 }
 
 local function log(prio, ...)
@@ -53,15 +44,15 @@ end
 
 local LVL_FUNCTIONS = {
     dbg = function(...) log(LOG_PRIO.dbg, ...) end,
-    notice = function(...) log(LOG_PRIO.notice, ...) end,
     info = function(...) log(LOG_PRIO.info, ...) end,
+    notice = function(...) log(LOG_PRIO.notice, ...) end,
     warn = function(...) log(LOG_PRIO.warn, ...) end,
     err = function(...) log(LOG_PRIO.err, ...) end,
     crit = function(...) log(LOG_PRIO.crit, ...) end,
 }
 
 --[[--
-Set logging level. By default, level is set to notice.
+Set logging level. By default, level is set to info.
 
 @int new_lvl new logging level, must be one of the levels from @{Logger.levels}
 
@@ -69,8 +60,8 @@ Set logging level. By default, level is set to notice.
 Logger:setLevel(Logger.levels.warn)
 ]]
 function Logger:setLevel(new_lvl)
-    for lvl_name, lvl_value in pairs(LOG_LVL) do
-        if new_lvl <= lvl_value then
+    for lvl_name, lvl_value in pairs(LOG_PRIO) do
+        if new_lvl >= lvl_value then
             self[lvl_name] = LVL_FUNCTIONS[lvl_name]
         else
             self[lvl_name] = noop
@@ -78,6 +69,6 @@ function Logger:setLevel(new_lvl)
     end
 end
 
-Logger:setLevel(LOG_LVL.notice)
+Logger:setLevel(LOG_PRIO.info)
 
 return Logger

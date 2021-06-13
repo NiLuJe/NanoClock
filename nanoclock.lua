@@ -101,7 +101,7 @@ function NanoClock:reloadConfig()
 
 	-- Was debug logging requested?
 	if self.cfg.global.debug == 0 then
-		logger:setLevel(logger.levels.notice)
+		logger:setLevel(logger.levels.info)
 	else
 		logger:setLevel(logger.levels.dbg)
 	end
