@@ -64,6 +64,11 @@ function NanoClock:init()
 	-- If we don't have a custom config file, copy the defaults
 	if C.access(self.config_path, C.F_OK) ~= 0 then
 		self.defaults_path = self.data_folder .. "/etc/" .. self.config_file
+
+		if C.access(self.defaults_path, C.F_OK) ~= 0 then
+			self:die("Default config file is missing, aborting!")
+		end
+
 		util.copyFile(self.defaults_path, self.config_path)
 	end
 end
@@ -96,18 +101,41 @@ function NanoClock:initDamage()
 	end
 end
 
+function NanoClock:initConfig()
+	local config_mtime = lfs.attributes(self.config_path, "modification")
+	if not config_mtime then
+		-- Can't find the config file *and* we never parsed it?
+		-- This should never happen, as the startup script should have ensured onboard is mounted by now,
+		-- and :init() that we've got a user config file in there...
+		self:die("Config file is missing, aborting!")
+	end
+	self.config_mtime = config_mtime
+
+	-- Start by loading the defaults...
+	local defaults = INIFile.parse(self.defaults_path)
+	-- Then the user config...
+	self.cfg = INIFile.parse(self.config_path)
+
+	-- Fill in anything that's missing in the user config with the defaults.
+	for section, st in pairs(defaults) do
+		if self.cfg[section] == nil then
+			self.cfg[section] = st
+		else
+			for k, v in pairs(st) do
+				if self.cfg[section][k] == nil then
+					self.cfg[section][k] = v
+				end
+			end
+		end
+	end
+end
+
 function NanoClock:reloadConfig()
 	-- Reload the config if it was modified since the last time we parsed it...
 	local config_mtime = lfs.attributes(self.config_path, "modification")
 	if not config_mtime then
 		-- Can't find the config file, is onboard currently unmounted? (USBMS?)
-		if not self.cfg then
-			-- Can't find the config file *and* we never parsed it?
-			-- This should never happen, as the startup script should have ensured onboard is mounted by now...
-			self:die("Config file is missing, aborting!")
-		end
-
-		-- Otherwise, we're done for now ;)
+		-- In any case, nothing more to do here ;).
 		return
 	end
 
@@ -118,6 +146,7 @@ function NanoClock:reloadConfig()
 		self.config_mtime = config_mtime
 	end
 
+	logger.notice("Config file was modified, reloading it")
 	self.cfg = INIFile.parse(self.config_path)
 
 	-- Was debug logging requested?
@@ -252,8 +281,7 @@ function NanoClock:main()
 	self:init()
 	self:initFBInk()
 	self:initDamage()
-
-	self:reloadConfig()
+	self:initConfig()
 
 	-- Main loop
 	self:waitForEvent()
