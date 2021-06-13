@@ -20,10 +20,10 @@ local C = ffi.C
 
 require("ffi/fbink_h")
 require("ffi/mxcfb_damage_h")
--- TODO: Prune of stuff we don't actually need, and add openlog/syslog/closelog
+-- TODO: add openlog/syslog/closelog
 require("ffi/posix_h")
--- TODO: For nightmode flag detection
---require("ffi/mxcfb_h")
+-- TODO: nightmode flag detection
+require("ffi/mxcfb_h")
 
 -- Mangle package search paths to sart looking inside lib/ first...
 package.path =
