@@ -99,6 +99,13 @@ function NanoClock:reloadConfig()
 	-- TODO: ts check
 	self.cfg = INIFile.parse(self.config_path)
 
+	-- Was debug logging requested?
+	if self.cfg.global.debug == 0 then
+		logger:setLevel(logger.levels.notice)
+	else
+		logger:setLevel(logger.levels.dbg)
+	end
+
 	-- TODO: Honor config :D
 end
 
@@ -187,14 +194,14 @@ function NanoClock:waitForEvent()
 								h = damage.data.update_region.height,
 							}
 							if update_area:intersectWith(self.damage_area) then
-								print("Updating clock")
+								logger.dbg("Updating clock")
 								self:displayClock()
 							else
-								print("No clock update required")
+								logger.dbg("No clock update required")
 							end
 						end
 					else
-						print("Invalid damage event!")
+						logger.warn("Invalid damage event!")
 					end
 				end
 			end
