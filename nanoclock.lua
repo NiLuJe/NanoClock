@@ -100,7 +100,7 @@ function NanoClock:reloadConfig()
 	-- Reload the config if it was modified since the last time we parsed it...
 	local config_mtime = lfs.attributes(self.config_path, "modification")
 	if not config_mtime then
-		-- Can't file the config file, is onboard currently unmounted? (USBMS?)
+		-- Can't find the config file, is onboard currently unmounted? (USBMS?)
 		if not self.cfg then
 			-- Can't find the config file *and* we never parsed it?
 			-- This should never happen, as the startup script should have ensured onboard is mounted by now...
@@ -131,6 +131,9 @@ function NanoClock:reloadConfig()
 end
 
 function NanoClock:prepareClock()
+	-- Check if the config has been updated, and reload it if necessary...
+	self:reloadConfig()
+
 	-- TODO: Actually honor settings ;p.
 	self.clock_string = os.date("%X")
 end
