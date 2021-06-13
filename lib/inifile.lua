@@ -34,11 +34,11 @@ local inifile = {
 	]] -- The above license is known as the Simplified BSD license.
 }
 
-function inifile.parse(name)
+function inifile.parse(path)
 	local t = {}
 	local section
 
-	for line in io.lines(name) do
+	for line in io.lines(path) do
 		-- Section headers
 		local s = line:match("^%[([^%]]+)%]$")
 		if s then

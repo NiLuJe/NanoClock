@@ -59,12 +59,11 @@ function NanoClock:init()
 	-- Setup logging
 	C.openlog("nanoclock", bit.bor(C.LOG_CONS, C.LOG_PID, C.LOG_NDELAY), C.LOG_DAEMON)
 
+	self.defaults_path = self.data_folder .. "/etc/" .. self.config_file
 	self.config_path = self.addon_folder .. "/" .. self.config_file
 
 	-- If we don't have a custom config file, copy the defaults
 	if C.access(self.config_path, C.F_OK) ~= 0 then
-		self.defaults_path = self.data_folder .. "/etc/" .. self.config_file
-
 		if C.access(self.defaults_path, C.F_OK) ~= 0 then
 			self:die("Default config file is missing, aborting!")
 		end
