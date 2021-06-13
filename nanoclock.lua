@@ -56,7 +56,7 @@ end
 
 function NanoClock:init()
 	-- Setup logging
-	C.openlog("nanoclock", bit.band(C.LOG_CONS, C.LOG_PID, C.LOG_NDELAY), C.LOG_DAEMON)
+	C.openlog("nanoclock", bit.bor(C.LOG_CONS, C.LOG_PID, C.LOG_NDELAY), C.LOG_DAEMON)
 
 	self.config_path = self.addon_folder .. "/" .. self.config_file
 
@@ -197,7 +197,7 @@ function NanoClock:waitForEvent()
 								logger.dbg("Updating clock")
 								self:displayClock()
 							else
-								logger.dbg("No clock update required")
+								logger.dbg(string.format("No clock update required: %s does not intersect with %s", tostring(update_area), tostring(self.damage_area)))
 							end
 						end
 					else
