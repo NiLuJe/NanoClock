@@ -332,6 +332,7 @@ function NanoClock:waitForEvent()
 							end
 						end
 					else
+						-- This should admittedly never happen...
 						logger.warn("Invalid damage event (format: %d)!",
 								ffi.cast("int", damage.format))
 					end
