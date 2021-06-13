@@ -48,6 +48,7 @@ local NanoClock = {
 	marker_found = false,
 	clock_area = Geom:new{x = 0, y = 0, w = math.huge, h = math.huge},
 	config_mtime = 0,
+	print_failed = false,
 }
 
 function NanoClock:die(msg)
@@ -127,12 +128,12 @@ function NanoClock:reloadConfig()
 	if not config_mtime then
 		-- Can't find the config file, is onboard currently unmounted? (USBMS?)
 		-- In any case, nothing more to do here ;).
-		return
+		return false
 	end
 
 	if config_mtime == self.config_mtime then
 		-- No change, we're done
-		return
+		return false
 	else
 		self.config_mtime = config_mtime
 	end
@@ -142,8 +143,7 @@ function NanoClock:reloadConfig()
 	self:sanitizeConfig()
 	self:handleConfig()
 
-	-- Force a clock refresh, to be able to recover from config-induced display failures...
-	self:displayClock()
+	return true
 end
 
 function NanoClock:sanitizeConfig()
@@ -208,8 +208,11 @@ function NanoClock:displayClock()
 		--       but any earlier and there won't be any ioctl at all, so no damage event for us ;)).
 		-- In any case, we don't want to get stuck in a display loop in case of failures,
 		-- so always resetting the damage tracking makes sense.
-		-- We simply force a clock display when we reload the config,
-		-- allowing to user to recover if the failure stems from a config snafu...
+		-- We simply force a clock display when we successfully reload the config,
+		-- allowing the user to recover if the failure stems from a config snafu...
+		self.print_failed = true
+	else
+		self.print_failed = false
 	end
 
 	-- Remember our marker to be able to ignore its damage event, otherwise we'd be stuck in an infinite loop ;).
@@ -331,6 +334,16 @@ function NanoClock:waitForEvent()
 										ffi.cast("unsigned int", damage.data.update_marker),
 										ffi.cast("unsigned int", self.clock_marker),
 										tostring(self.marker_found))
+
+								-- Do attempt to recover from print failures, in case they stem from a config issue...
+								-- NOTE: This would be mildly less icky if we tracked config updates via inotify,
+								--       in which case we'd just have to stick a :displayClock() at the end of :reloadConfig() ;).
+								if self.print_failed then
+									if self:reloadConfig() then
+										logger.notice("Previous clock update failed, but config was modified, trying again")
+										self:displayClock()
+									end
+								end
 							end
 						end
 					else
@@ -350,7 +363,7 @@ function NanoClock:main()
 	self:initDamage()
 	self:initConfig()
 
-	-- Display the clock once on startup, so that we start with a sane clock marker & area
+	-- Display the clock once on startup, so that we start with sane clock marker & area tracking
 	self:displayClock()
 
 	-- Main loop
