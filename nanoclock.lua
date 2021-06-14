@@ -215,10 +215,9 @@ function NanoClock:handleConfig()
 			table.insert(user_days, day)
 		end
 
-		local u_days = { "1", "2", "3", "4", "5", "6", "7" }
 		self.days_map = {}
-		for k, v in ipairs(u_days) do
-			self.days_map[v] = user_days[k] or self.en_days[k]
+		for k, v in ipairs(self.en_days) do
+			self.days_map[k] = user_days[k] or v
 		end
 	end
 
@@ -228,10 +227,9 @@ function NanoClock:handleConfig()
 			table.insert(user_months, month)
 		end
 
-		local m_months = { "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12" }
 		self.months_map = {}
-		for k, v in ipairs(m_months) do
-			self.months_map[v] = user_months[k] or self.en_months[k]
+		for k, v in ipairs(self.en_months) do
+			self.months_map[k] = user_months[k] or v
 		end
 	end
 
@@ -364,21 +362,21 @@ function NanoClock:getBatteryLevel()
 end
 
 function NanoClock:getUserDay()
-	local u_day = os.date("%u")
+	local k = tonumber(os.date("%u"))
 	if not self.days_map then
-		return self.en_days[u_day]
+		return self.en_days[k]
 	end
 
-	return self.days_map[u_day]
+	return self.days_map[k]
 end
 
 function NanoClock:getUserMonth()
-	local m_month = os.date("%m")
+	local k = tonumber(os.date("%m"))
 	if not self.months_map then
-		return self.en_months[m_month]
+		return self.en_months[k]
 	end
 
-	return self.months_map[m_month]
+	return self.months_map[k]
 end
 
 function NanoClock:prepareClock()
