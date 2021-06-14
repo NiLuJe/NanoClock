@@ -310,6 +310,14 @@ function NanoClock:handleConfig()
 		self.fbink_cfg.bg_color = fbink_util.BGColor(self.cfg.display.bg_color)
 	end
 
+	-- Fixed cell setup
+	self.fbink_cfg.col = self.cfg.display.column
+	self.fbink_cfg.hoffset = self.cfg.display.offset_x
+	self.fbink_cfg.row = self.cfg.display.row
+	self.fbink_cfg.voffset = self.cfg.display.offset_y
+	self.fbink_cfg.fontname = fbink_util.Font(self.cfg.display.font)
+	self.fbink_cfg.fontmult = self.cfg.display.size
+
 	-- Some settings require an fbink_init to take...
 	FBInk.fbink_init(self.fbink_fd, self.fbink_cfg)
 end
