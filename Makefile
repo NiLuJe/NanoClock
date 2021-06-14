@@ -131,7 +131,7 @@ fbinkclean:
 	$(MAKE) clean
 
 luajitclean:
-	cd sqlite && \
+	cd LuaJIT && \
 	make clean && \
 	git reset --hard && \
 	git clean -fxdq
