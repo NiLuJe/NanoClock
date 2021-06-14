@@ -12,6 +12,7 @@
 -- TODO: Shell wrapper to handle udev workarounds, wait_for_nickel & the Aura FW check
 --       And, of course, the kernel module loading.
 --       Probably going to need a minimal cli fbink build to handle the PLATFORM detect.
+-- TODO: Reimplement uninstall_check, too
 local bit = require("bit")
 local ffi = require("ffi")
 local C = ffi.C
@@ -174,7 +175,76 @@ function NanoClock:handleConfig()
 		logger:setLevel(logger.levels.dbg)
 	end
 
-	-- TODO: Honor config :D
+	-- Massage various settings into a usable form
+	if self.cfg.display.backgroundless ~= 0 then
+		self.fbink_cfg.is_bgless = true
+	else
+		self.fbink_cfg.is_bgless = false
+	end
+	if self.cfg.display.overlay ~= 0 then
+		self.fbink_cfg.is_overlay = true
+	else
+		self.fbink_cfg.is_overlay = false
+	end
+
+	if self.cfg.display.truetype_format == nil then
+		self.cfg.display.truetype_format = self.cfg.display.format
+	end
+	if self.cfg.display.truetype_padding ~= 0 then
+		self.cfg.display.truetype_format = " " .. self.cfg.display.truetype_format .. " "
+	end
+
+	-- Handle the localization mappings...
+	if self.cfg.display.days ~= nil then
+		local user_days = {}
+		for day in string.gmatch(self.cfg.display.days, "%a+") do
+			table.insert(user_days, day)
+		end
+
+		local en_days = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" }
+		self.days_map = {}
+		for k, v in ipairs(en_days) do
+			self.days_map[v] = user_days[k] or v
+		end
+	end
+
+	if self.cfg.display.months ~= nil then
+		local user_months = {}
+		for month in string.gmatch(self.cfg.display.months, "%a+") do
+			table.insert(user_months, month)
+		end
+
+		local en_months = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" }
+		self.months_map = {}
+		for k, v in ipairs(en_months) do
+			self.months_map[v] = user_months[k] or v
+		end
+	end
+
+	-- Make sure the font paths are absolute, because our $PWD is not self.addon_folder but self.data_folder ;).
+	if self.cfg.display.truetype ~= nil then
+		if self.cfg.display.truetype:sub(1, 1) ~= "/" then
+			self.cfg.display.truetype = self.addon_folder .. "/" .. self.cfg.display.truetype
+		end
+	end
+	if self.cfg.display.truetype_bold ~= nil then
+		if self.cfg.display.truetype_bold:sub(1, 1) ~= "/" then
+			self.cfg.display.truetype_bold = self.addon_folder .. "/" .. self.cfg.display.truetype_bold
+		end
+	end
+	if self.cfg.display.truetype_italic ~= nil then
+		if self.cfg.display.truetype_italic:sub(1, 1) ~= "/" then
+			self.cfg.display.truetype_italic = self.addon_folder .. "/" .. self.cfg.display.truetype_italic
+		end
+	end
+	if self.cfg.display.truetype_bolditalic ~= nil then
+		if self.cfg.display.truetype_bolditalic:sub(1, 1) ~= "/" then
+			self.cfg.display.truetype_bolditalic = self.addon_folder .. "/" .. self.cfg.display.truetype_bolditalic
+		end
+	end
+
+	-- Some settings require an fbink_init to take...
+	FBInk.fbink_init(self.fbink_fd, self.fbink_cfg)
 end
 
 function NanoClock:prepareClock()
@@ -183,6 +253,13 @@ function NanoClock:prepareClock()
 
 	-- TODO: Actually honor settings ;p.
 	self.clock_string = os.date("%X")
+
+	-- Do we have substitutions to handle?
+	if not self.clock_string:find("%b%{%}") then
+		return
+	end
+
+	-- TODO: Handle substitutions...
 end
 
 function NanoClock:displayClock()
