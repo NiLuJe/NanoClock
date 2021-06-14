@@ -81,37 +81,20 @@ ifeq (,$(findstring arm-,$(CC)))
 endif
 
 nanoclock: armcheck fbink.built luajit.built lfs
-	mkdir -p Kobo/usr/local/kfmon/bin Kobo/usr/bin Kobo/etc/udev/rules.d Kobo/etc/init.d
-	ln -sf $(CURDIR)/scripts/99-kfmon.rules Kobo/etc/udev/rules.d/99-kfmon.rules
-	ln -sf $(CURDIR)/scripts/uninstall/kfmon-uninstall.sh Kobo/usr/local/kfmon/bin/kfmon-update.sh
-	ln -sf $(CURDIR)/scripts/uninstall/on-animator.sh Kobo/etc/init.d/on-animator.sh
-	tar --exclude="./mnt" --exclude="KFMon-*.zip" --owner=root --group=root -cvzhf Release/KoboRoot.tgz -C Kobo .
-	pushd Release && zip ../Kobo/KFMon-Uninstaller.zip KoboRoot.tgz && popd
-	rm -f Release/KoboRoot.tgz
-	rm -rf Kobo/usr/local/kfmon/bin Kobo/etc/udev/rules.d Kobo/etc/init.d
-	mkdir -p Kobo/usr/local/kfmon/bin Kobo/mnt/onboard/.kobo Kobo/etc/udev/rules.d Kobo/etc/init.d Kobo/mnt/onboard/.adds/kfmon/config Kobo/mnt/onboard/.adds/kfmon/bin Kobo/mnt/onboard/.adds/kfmon/log Kobo/mnt/onboard/icons
-	ln -f $(CURDIR)/resources/koreader.png Kobo/mnt/onboard/koreader.png
-	ln -f $(CURDIR)/resources/plato.png Kobo/mnt/onboard/icons/plato.png
-	ln -f $(CURDIR)/resources/kfmon.png Kobo/mnt/onboard/kfmon.png
-	ln -f $(CURDIR)/Release/kfmon Kobo/usr/local/kfmon/bin/kfmon
-	ln -f $(CURDIR)/Release/shim Kobo/usr/local/kfmon/bin/shim
-	ln -f $(CURDIR)/Release/kfmon-ipc Kobo/usr/local/kfmon/bin/kfmon-ipc
-	ln -sf /usr/local/kfmon/bin/kfmon-ipc Kobo/usr/bin/kfmon-ipc
-	ln -f $(CURDIR)/FBInk/Release/fbink Kobo/usr/local/kfmon/bin/fbink
-	ln -f $(CURDIR)/README.md Kobo/usr/local/kfmon/README.md
-	ln -f $(CURDIR)/LICENSE Kobo/usr/local/kfmon/LICENSE
-	ln -f $(CURDIR)/CREDITS Kobo/usr/local/kfmon/CREDITS
-	ln -f $(CURDIR)/scripts/99-kfmon.rules Kobo/etc/udev/rules.d/99-kfmon.rules
-	ln -f $(CURDIR)/scripts/kfmon-update.sh Kobo/usr/local/kfmon/bin/kfmon-update.sh
-	ln -f $(CURDIR)/scripts/on-animator.sh Kobo/etc/init.d/on-animator.sh
-	tar --exclude="./mnt" --exclude="KFMon-*.zip" --owner=root --group=root --hard-dereference -cvzf Release/KoboRoot.tgz -C Kobo .
-	ln -sf $(CURDIR)/Release/KoboRoot.tgz Kobo/mnt/onboard/.kobo/KoboRoot.tgz
-	ln -sf $(CURDIR)/config/kfmon.ini Kobo/mnt/onboard/.adds/kfmon/config/kfmon.ini
-	ln -sf $(CURDIR)/config/koreader.ini Kobo/mnt/onboard/.adds/kfmon/config/koreader.ini
-	ln -sf $(CURDIR)/config/plato.ini Kobo/mnt/onboard/.adds/kfmon/config/plato.ini
-	ln -sf $(CURDIR)/config/kfmon-log.ini Kobo/mnt/onboard/.adds/kfmon/config/kfmon-log.ini
-	ln -sf $(CURDIR)/scripts/kfmon-printlog.sh Kobo/mnt/onboard/.adds/kfmon/bin/kfmon-printlog.sh
-	pushd Kobo/mnt/onboard && zip -r ../../KFMon-$(KFMON_VERSION).zip . && popd
+	mkdir -p Kobo/usr/local/NanoClock/etc Kobo/usr/local/NanoClock/bin Kobo/usr/local/NanoClock/lib Kobo/etc/udev/rules.d Kobo/mnt/onboard/.adds/nanoclock Kobo/mnt/onboard/.kobo
+	ln -sf $(CURDIR)/scripts/99-nanoclock.rules Kobo/etc/udev/rules.d/99-nanoclock.rules
+	ln -sf $(CURDIR)/scripts/nanoclock-launcher.sh Kobo/usr/local/NanoClock/bin/nanoclock-launcher.sh
+	ln -sf $(CURDIR)/scripts/nanoclock.sh Kobo/usr/local/NanoClock/bin/nanoclock.sh
+	ln -sf $(CURDIR)/config/nanoclock.ini Kobo/usr/local/NanoClock/etc/nanoclock.ini
+	ln -sf $(CURDIR)/lib Kobo/usr/local/NanoClock/lib
+	ln -sf $(CURDIR)/lib Kobo/usr/local/NanoClock/lib
+	ln -sf $(CURDIR)/$(OUT_DIR)/fbink Kobo/usr/local/NanoClock/bin/fbink
+	ln -sf $(CURDIR)/$(OUT_DIR)/luajit Kobo/usr/local/NanoClock/bin/luajit
+	ln -sf $(CURDIR)/$(OUT_DIR)/libfbink.so.1.0.0 Kobo/usr/local/NanoClock/lib/libfbink.so.1.0.0
+	ln -sf $(CURDIR)/$(OUT_DIR)/lfs.so Kobo/usr/local/NanoClock/lib/lfs.so
+	tar --exclude="./mnt" --exclude="NanoClock-*.zip" --owner=root --group=root --hard-dereference -cvzf $(OUT_DIR)/KoboRoot.tgz -C Kobo .
+	ln -sf $(CURDIR)/$(OUT_DIR)/KoboRoot.tgz Kobo/mnt/onboard/.kobo/KoboRoot.tgz
+	pushd Kobo/mnt/onboard && zip -r ../../NanoClock-$(NANOCLOCK_VERSION)-$(NANOCLOCK_TIMESTAMP).zip . && popd
 
 clean:
 	rm -rf Kobo
