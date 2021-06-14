@@ -92,6 +92,7 @@ nanoclock: armcheck fbink.built luajit.built lfs
 	ln -sf $(CURDIR)/lib/logger.lua Kobo/usr/local/NanoClock/lib/logger.lua
 	ln -sf $(CURDIR)/lib/util.lua Kobo/usr/local/NanoClock/lib/util.lua
 	ln -sf $(CURDIR)/kmod Kobo/usr/local/NanoClock/
+	ln -sf $(CURDIR)/nanoclock.lua Kobo/usr/local/NanoClock/nanoclock.lua
 	ln -sf $(CURDIR)/$(OUT_DIR)/fbink Kobo/usr/local/NanoClock/bin/fbink
 	ln -sf $(CURDIR)/$(OUT_DIR)/luajit Kobo/usr/local/NanoClock/bin/luajit
 	ln -sf $(CURDIR)/$(OUT_DIR)/libfbink.so.1.0.0 Kobo/usr/local/NanoClock/lib/libfbink.so.1.0.0
