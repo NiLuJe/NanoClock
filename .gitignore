@@ -1,3 +1,4 @@
 # Build artifacts
 build/
 *.built
+Kobo/
