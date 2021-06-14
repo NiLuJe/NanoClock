@@ -81,7 +81,7 @@ ifeq (,$(findstring arm-,$(CC)))
 endif
 
 nanoclock: armcheck fbink.built luajit.built lfs
-	mkdir -p Kobo/usr/local/NanoClock/etc Kobo/usr/local/NanoClock/bin Kobo/usr/local/NanoClock/lib Kobo/etc/udev/rules.d Kobo/mnt/onboard/.adds/nanoclock Kobo/mnt/onboard/.kobo
+	mkdir -p Kobo/usr/local/NanoClock/etc Kobo/usr/local/NanoClock/bin Kobo/usr/local/NanoClock/lib Kobo/usr/local/NanoClock/ffi Kobo/etc/udev/rules.d Kobo/mnt/onboard/.adds/nanoclock Kobo/mnt/onboard/.kobo
 	ln -sf $(CURDIR)/scripts/99-nanoclock.rules Kobo/etc/udev/rules.d/99-nanoclock.rules
 	ln -sf $(CURDIR)/scripts/nanoclock-launcher.sh Kobo/usr/local/NanoClock/bin/nanoclock-launcher.sh
 	ln -sf $(CURDIR)/scripts/nanoclock.sh Kobo/usr/local/NanoClock/bin/nanoclock.sh
@@ -91,6 +91,10 @@ nanoclock: armcheck fbink.built luajit.built lfs
 	ln -sf $(CURDIR)/lib/inifile.lua Kobo/usr/local/NanoClock/lib/inifile.lua
 	ln -sf $(CURDIR)/lib/logger.lua Kobo/usr/local/NanoClock/lib/logger.lua
 	ln -sf $(CURDIR)/lib/util.lua Kobo/usr/local/NanoClock/lib/util.lua
+	ln -sf $(CURDIR)/ffi/fbink_h.lua Kobo/usr/local/NanoClock/ffi/fbink_h.lua
+	ln -sf $(CURDIR)/ffi/mxcfb_damage_h.lua Kobo/usr/local/NanoClock/ffi/mxcfb_damage_h.lua
+	ln -sf $(CURDIR)/ffi/mxcfb_h.lua Kobo/usr/local/NanoClock/ffi/mxcfb_h.lua
+	ln -sf $(CURDIR)/ffi/posix_h.lua Kobo/usr/local/NanoClock/ffi/posix_h.lua
 	ln -sf $(CURDIR)/kmod Kobo/usr/local/NanoClock/
 	ln -sf $(CURDIR)/nanoclock.lua Kobo/usr/local/NanoClock/nanoclock.lua
 	ln -sf $(CURDIR)/$(OUT_DIR)/fbink Kobo/usr/local/NanoClock/bin/fbink
