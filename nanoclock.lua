@@ -392,6 +392,7 @@ function NanoClock:prepareClock()
 
 	-- Do we have substitutions to handle?
 	if not self.clock_string:find("%b{}") then
+		-- We don't, no need to compute fancy stuff
 		return
 	end
 
