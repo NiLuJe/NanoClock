@@ -247,6 +247,38 @@ function NanoClock:handleConfig()
 	FBInk.fbink_init(self.fbink_fd, self.fbink_cfg)
 end
 
+function NanoClock:getFrontLightLevel()
+	-- TODO
+	return "100"
+end
+
+function NanoClock:getBatteryLevel()
+	local gauge = util.read_int_file(self.cfg.display.battery_source)
+	if gauge >= self.cfg.display.battery_min and gauge <= self.cfg.display.battery_max then
+		return tostring(gauge) .. "%"
+	else
+		return ""
+	end
+end
+
+function NanoClock:getUserDay()
+	local en_day = os.date("%u")
+	if not self.days_map then
+		return en_day
+	end
+
+	return self.days_map[en_day]
+end
+
+function NanoClock:getUserMonth()
+	local en_month = os.date("%m")
+	if not self.months_map then
+		return en_month
+	end
+
+	return self.months_map[en_month]
+end
+
 function NanoClock:prepareClock()
 	-- Check if the config has been updated, and reload it if necessary...
 	self:reloadConfig()
@@ -255,11 +287,19 @@ function NanoClock:prepareClock()
 	self.clock_string = os.date("%X")
 
 	-- Do we have substitutions to handle?
-	if not self.clock_string:find("%b%{%}") then
+	if not self.clock_string:find("%b{}") then
 		return
 	end
 
-	-- TODO: Handle substitutions...
+	-- Setup the replacement table...
+	local repl = {
+		["{frontlight}"] = self:getFrontLightLevel(),
+		["{battery}"] = self:getBatteryLevel(),
+		["{day}"] = self:getUserDay(),
+		["{month}"] = self:getUserMonth(),
+	}
+	-- And let gsub do the rest ;).
+	self.clock_string = self.clock_string:gsub("(%b{})", repl)
 end
 
 function NanoClock:displayClock()
