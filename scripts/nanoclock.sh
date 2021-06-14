@@ -15,7 +15,10 @@ NANOCLOCK_DIR="/usr/local/NanoClock"
 FBINK_BIN="./bin/fbink"
 
 # We expect our PWD to be NanoClock's base folder
-cd "${NANOCLOCK_DIR}" || logger -p "DAEMON.CRIT" -t "${SCRIPT_NAME}[$$]" "NanoClock base folder not found!" && exit
+if ! cd "${NANOCLOCK_DIR}" ; then
+	logger -p "DAEMON.CRIT" -t "${SCRIPT_NAME}[$$]" "NanoClock base folder not found!"
+	exit
+fi
 
 # Wait until nickel is up
 while ! pidof nickel >/dev/null 2>&1 || ! grep -q /mnt/onboard /proc/mounts ; do
@@ -55,7 +58,10 @@ fi
 if grep -q "mxc_epdc_fb_damage" "/proc/modules" ; then
 	logger -p "DAEMON.NOTICE" -t "${SCRIPT_NAME}[$$]" "Kernel module for platform ${DEVICE_GEN}/${PLATFORM} is already loaded!"
 else
-	insmod "${KMOD_PATH}" || logger -p "DAEMON.ERR" -t "${SCRIPT_NAME}[$$]" "Platform ${DEVICE_GEN}/${PLATFORM} is unsupported: failed to load the kernel module!" && exit
+	if ! insmod "${KMOD_PATH}" ; then
+		logger -p "DAEMON.ERR" -t "${SCRIPT_NAME}[$$]" "Platform ${DEVICE_GEN}/${PLATFORM} is unsupported: failed to load the kernel module!"
+		exit
+	fi
 fi
 
 # And here we go!
