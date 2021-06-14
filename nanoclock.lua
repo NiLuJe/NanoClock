@@ -379,7 +379,7 @@ function NanoClock:getUserMonth()
 	return self.months_map[k]
 end
 
-local function patternSubstitutions(m)
+local function expandPatterns(m)
 	-- NOTE: We pass a function to gsub instead of a simple replacement table in order to be able to only
 	--       actually run the function that generates the substitution string as necessary...
 	if m == "{battery}" then
@@ -416,7 +416,7 @@ function NanoClock:prepareClock()
 	end
 
 	-- Let gsub do the rest ;).
-	self.clock_string = self.clock_string:gsub("(%b{})", patternSubstitutions)
+	self.clock_string = self.clock_string:gsub("(%b{})", expandPatterns)
 
 	return true
 end
