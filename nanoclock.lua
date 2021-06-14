@@ -8,9 +8,6 @@
 	SPDX-License-Identifier: GPL-3.0-or-later
 --]]
 
--- TODO: Shell wrapper to handle wait_for_nickel & the Aura FW check
---       And, of course, the kernel module loading.
--- TODO: Reimplement uninstall_check, too
 local bit = require("bit")
 local ffi = require("ffi")
 local C = ffi.C
@@ -179,6 +176,14 @@ function NanoClock:sanitizeConfig()
 end
 
 function NanoClock:handleConfig()
+	-- Was an uninstall requested?
+	if self.cfg.global.uninstall ~= 0 then
+		os.rename(self.config_path, self.addon_folder .. "/uninstalled-" .. os.date("+%Y%m%d-%H%M") .. ".ini")
+		os.remove("/etc/udev/rules.d/99-nanoclock.rules")
+		os.execute("rm -rf /usr/local/NanoClock")
+		self:die("Uninstalled!")
+	end
+
 	-- Was debug logging requested?
 	if self.cfg.global.debug == 0 then
 		logger:setLevel(logger.levels.info)
