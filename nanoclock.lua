@@ -50,6 +50,8 @@ local NanoClock = {
 	clock_area = Geom:new{x = 0, y = 0, w = math.huge, h = math.huge},
 	config_mtime = 0,
 	print_failed = false,
+	nickel_mtime = 0,
+	fl_brightness = "??",
 }
 
 function NanoClock:die(msg)
@@ -260,9 +262,22 @@ function NanoClock:getFrontLightLevel()
 		local brightness = util.read_int_file("/sys/class/backlight/mxc_msp430.0/actual_brightness")
 		return tostring(brightness) .. "%"
 	else
+		-- Avoid parsing it again if it hasn't changed, like :reloadConfig()
+		local nickel_mtime = lfs.attributes(self.nickel_config, "modification")
+		if not nickel_mtime then
+			return self.fl_brightness
+		end
+
+		if nickel_mtime == self.nickel_mtime then
+			return self.fl_brightness
+		else
+			self.nickel_mtime = nickel_mtime
+		end
+
 		local nickel = INIFile.parse(self.nickel_config)
 		if nickel and nickel.PowerOptions and nickel.PowerOptions.FrontLightLevel then
-			return tostring(nickel.PowerOptions.FrontLightLevel) .. "%"
+			self.fl_brightness = tostring(nickel.PowerOptions.FrontLightLevel) .. "%"
+			return self.fl_brightness
 		else
 			return "??"
 		end
