@@ -353,9 +353,6 @@ function NanoClock:displayClock()
 		end
 	end
 
-	-- Deal with nightmode shenanigans...
-	self.fbink_cfg.is_nightmode = self.need_nightmode
-
 	-- TODO: Actually honor settings ;p.
 	local ret = FBInk.fbink_print(self.fbink_fd, self.clock_string, self.fbink_cfg)
 	if ret < 0 then
@@ -486,9 +483,9 @@ function NanoClock:waitForEvent()
 								if update_area:intersectWith(self.clock_area) then
 									-- We'll need to know if nightmode is currently enabled to do the same...
 									if bit.band(damage.data.flags, C.EPDC_FLAG_ENABLE_INVERSION) then
-										self.need_nightmode = true
+										self.fbink_cfg.is_nightmode = true
 									else
-										self.need_nightmode = false
+										self.fbink_cfg.is_nightmode = false
 									end
 
 									self:displayClock()
