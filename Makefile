@@ -114,9 +114,7 @@ fbink.built: | outdir
 
 	touch fbink.built
 
-luajit.built: | outdir
-	cd LuaJIT && \
-	$(MAKE) HOST_CC="gcc -m32" CFLAGS="" CCOPT="" HOST_CFLAGS="-O2 -march=native -pipe" CROSS="$(CROSS_PREFIX)" TARGET_CFLAGS="$(CFLAGS)" clean
+luajit.built: | outdir luajitclean
 	cd LuaJIT && \
 	$(MAKE) HOST_CC="gcc -m32" CFLAGS="" CCOPT="" HOST_CFLAGS="-O2 -march=native -pipe" CROSS="$(CROSS_PREFIX)" TARGET_CFLAGS="$(CFLAGS)" amalg
 	cp -av LuaJIT/src/luajit $(OUT_DIR)/luajit
@@ -133,7 +131,7 @@ fbinkclean:
 
 luajitclean:
 	cd LuaJIT && \
-	make clean && \
+	$(MAKE) HOST_CC="gcc -m32" CFLAGS="" CCOPT="" HOST_CFLAGS="-O2 -march=native -pipe" CROSS="$(CROSS_PREFIX)" TARGET_CFLAGS="$(CFLAGS)" clean
 	git reset --hard && \
 	git clean -fxdq
 
