@@ -22,7 +22,7 @@ function util.copyFile(from, to)
 end
 
 --- Read single-line files (e.g., sysfs)
-function util.read_int_file(file)
+function util.readFileAsNumber(file)
     local fd = io.open(file, "r")
     if fd then
         local int = fd:read("*number")
@@ -33,7 +33,7 @@ function util.read_int_file(file)
     end
 end
 
-function util.read_str_file(file)
+function util.readFileAsString(file)
     local fd = io.open(file, "r")
     if fd then
         local str = fd:read("*line")

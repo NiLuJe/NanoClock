@@ -81,7 +81,7 @@ function NanoClock:init()
 	end
 
 	-- TODO: Bake it at make time via git describe
-	self.version = util.read_str_file(self.data_folder .. "/etc/VERSION")
+	self.version = util.readFileAsString(self.data_folder .. "/etc/VERSION")
 	if self.version == "" then
 		self.version = "vDEV"
 	end
@@ -326,7 +326,7 @@ end
 function NanoClock:getFrontLightLevel()
 	-- We can poke sysfs directly on Mark 7
 	if self.device_platform == "Mark 7" then
-		local brightness = util.read_int_file("/sys/class/backlight/mxc_msp430.0/actual_brightness")
+		local brightness = util.readFileAsNumber("/sys/class/backlight/mxc_msp430.0/actual_brightness")
 		return tostring(brightness) .. "%"
 	else
 		-- Otherwise, we have to look inside Nickel's config...
@@ -353,7 +353,7 @@ function NanoClock:getFrontLightLevel()
 end
 
 function NanoClock:getBatteryLevel()
-	local gauge = util.read_int_file(self.cfg.display.battery_source)
+	local gauge = util.readFileAsNumber(self.cfg.display.battery_source)
 	if gauge >= self.cfg.display.battery_min and gauge <= self.cfg.display.battery_max then
 		return tostring(gauge) .. "%"
 	else
