@@ -99,7 +99,14 @@ function NanoClock:initFBInk()
 		self:die("Failed to initialize FBInk, aborting!")
 	end
 
-	-- TODO: Do a state dump and store the platform to be able to lookup frontlight via sysfs on Mk. 7?
+	-- We may need to do some device-specific stuff down the line...
+	local state = ffi.new("FBInkState")
+	FBInk.fbink_get_state(self.fbink_cfg, state)
+	self.device_name = ffi.string(state.device_name)
+	self.device_codename = ffi.string(state.device_codename)
+	self.device_platform = ffi.string(state.device_platform)
+	self.device_id = state.device_id
+	self.can_hw_invert = state.can_hw_invert
 end
 
 function NanoClock:initDamage()
@@ -248,8 +255,18 @@ function NanoClock:handleConfig()
 end
 
 function NanoClock:getFrontLightLevel()
-	-- TODO
-	return "100"
+	-- We can poke sysfs directly on Mark 7
+	if self.device_platform == "Mark 7" then
+		local brightness = util.read_int_file("/sys/class/backlight/mxc_msp430.0/actual_brightness")
+		return tostring(brightness) .. "%"
+	else
+		local nickel = INIFile.parse(self.nickel_config)
+		if nickel and nickel.PowerOptions and nickel.PowerOptions.FrontLightLevel then
+			return tostring(nickel.PowerOptions.FrontLightLevel) .. "%"
+		else
+			return "??"
+		end
+	end
 end
 
 function NanoClock:getBatteryLevel()
