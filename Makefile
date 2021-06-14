@@ -97,9 +97,10 @@ nanoclock: armcheck fbink.built luajit.built lfs
 	ln -sf $(CURDIR)/$(OUT_DIR)/luajit Kobo/usr/local/NanoClock/bin/luajit
 	ln -sf $(CURDIR)/$(OUT_DIR)/libfbink.so.1.0.0 Kobo/usr/local/NanoClock/lib/libfbink.so.1.0.0
 	ln -sf $(CURDIR)/$(OUT_DIR)/lfs.so Kobo/usr/local/NanoClock/lib/lfs.so
+	echo "$(NANOCLOCK_VERSION) ($(NANOCLOCK_TIMESTAMP))" > Kobo/usr/local/NanoClock/etc/VERSION
 	tar --exclude="./mnt" --exclude="NanoClock-*.zip" --owner=root --group=root --hard-dereference -cvzhf $(OUT_DIR)/KoboRoot.tgz -C Kobo .
 	ln -sf $(CURDIR)/$(OUT_DIR)/KoboRoot.tgz Kobo/mnt/onboard/.kobo/KoboRoot.tgz
-	pushd Kobo/mnt/onboard && zip -r ../../NanoClock-$(NANOCLOCK_VERSION)-$(NANOCLOCK_TIMESTAMP).zip . && popd
+	pushd Kobo/mnt/onboard && zip -r ../../NanoClock-$(NANOCLOCK_VERSION).zip . && popd
 
 clean:
 	rm -rf Kobo
