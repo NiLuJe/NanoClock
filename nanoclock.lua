@@ -383,6 +383,11 @@ function NanoClock:prepareClock()
 	-- Check if the config has been updated, and reload it if necessary...
 	self:reloadConfig()
 
+	-- If the clock was stopped, we're done.
+	if self.cfg.global.stop ~= 0 then
+		return false
+	end
+
 	-- Run the appropriate user format string through strftime...
 	if self.with_ot then
 		self.clock_string = os.date(self.cfg.display.truetype_format)
@@ -405,10 +410,16 @@ function NanoClock:prepareClock()
 	}
 	-- And let gsub do the rest ;).
 	self.clock_string = self.clock_string:gsub("(%b{})", repl)
+
+	return true
 end
 
 function NanoClock:displayClock()
-	self:prepareClock()
+	if not self:prepareClock() then
+		-- The clock was stopped, we're done
+		logger.dbg("Clock is stopped")
+		return
+	end
 
 	-- We need to handle potential changes in the framebuffer format/layout...
 	local reinit = FBInk.fbink_reinit(self.fbink_fd, self.fbink_cfg)
