@@ -379,6 +379,20 @@ function NanoClock:getUserMonth()
 	return self.months_map[k]
 end
 
+local function patternSubstitutions(m)
+	-- NOTE: We pass a function to gsub instead of a simple replacement table in order to be able to only
+	--       actually run the function that generate the substitution string as necessary...
+	if m == "{battery}" then
+		return NanoClock:getBatteryLevel()
+	elseif m == "{frontlight}" then
+		return NanoClock:getFrontLightLevel()
+	elseif m == "{day}" then
+		return NanoClock:getUserDay()
+	elseif m == "{month}" then
+		return NanoClock:getUserMonth()
+	end
+end
+
 function NanoClock:prepareClock()
 	-- Check if the config has been updated, and reload it if necessary...
 	self:reloadConfig()
@@ -401,15 +415,8 @@ function NanoClock:prepareClock()
 		return true
 	end
 
-	-- Setup the replacement table...
-	local repl = {
-		["{frontlight}"] = self:getFrontLightLevel(),
-		["{battery}"] = self:getBatteryLevel(),
-		["{day}"] = self:getUserDay(),
-		["{month}"] = self:getUserMonth(),
-	}
-	-- And let gsub do the rest ;).
-	self.clock_string = self.clock_string:gsub("(%b{})", repl)
+	-- Let gsub do the rest ;).
+	self.clock_string = self.clock_string:gsub("(%b{})", patternSubstitutions)
 
 	return true
 end
