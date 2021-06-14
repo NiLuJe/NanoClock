@@ -67,7 +67,7 @@ $(OUT_DIR)/%.o: %.c
 	$(CC) $(CPPFLAGS) $(EXTRA_CPPFLAGS) $(LFS_CPPFLAGS) $(CFLAGS) $(EXTRA_CFLAGS) $(LFS_CFLAGS) -o $@ -c $<
 
 outdir:
-	mkdir -p $(OUT_DIR)
+	mkdir -p $(OUT_DIR)/luafilesystem/src/
 
 # Make absolutely sure we create our output directories first, even with unfortunate // timings!
 # c.f., https://www.gnu.org/software/make/manual/html_node/Prerequisite-Types.html#Prerequisite-Types
