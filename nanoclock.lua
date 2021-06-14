@@ -1,5 +1,4 @@
 #! ./bin/luajit
--- FIXME: Build & bundle LuaJIT, luafilesystem & FBInk ourselves.
 
 --[[
 	NanoClock: A persnickety clock for Kobo devices
@@ -9,9 +8,8 @@
 	SPDX-License-Identifier: GPL-3.0-or-later
 --]]
 
--- TODO: Shell wrapper to handle udev workarounds, wait_for_nickel & the Aura FW check
+-- TODO: Shell wrapper to handle wait_for_nickel & the Aura FW check
 --       And, of course, the kernel module loading.
---       Probably going to need a minimal cli fbink build to handle the PLATFORM detect.
 -- TODO: Reimplement uninstall_check, too
 local bit = require("bit")
 local ffi = require("ffi")
@@ -80,7 +78,6 @@ function NanoClock:init()
 		util.copyFile(self.defaults_path, self.config_path)
 	end
 
-	-- TODO: Bake it at make time via git describe
 	self.version = util.readFileAsString(self.data_folder .. "/etc/VERSION")
 	if self.version == "" then
 		self.version = "vDEV"
