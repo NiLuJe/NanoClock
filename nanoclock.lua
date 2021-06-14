@@ -31,6 +31,7 @@ package.cpath =
     "lib/?.so;" ..
     package.cpath
 
+local fbink_util = require("fbink_util")
 local lfs = require("lfs")
 local logger = require("logger")
 local util = require("util")
@@ -251,6 +252,62 @@ function NanoClock:handleConfig()
 		if self.cfg.display.truetype_bolditalic:sub(1, 1) ~= "/" then
 			self.cfg.display.truetype_bolditalic = self.addon_folder .. "/" .. self.cfg.display.truetype_bolditalic
 		end
+	end
+
+	-- Setup FBInk according to those settings...
+	if self.cfg.display.truetype ~= nil then
+		if FBInk.fbink_add_ot_font(self.cfg.display.truetype, C.FNT_REGULAR) ~= 0 then
+			logger.warn("Failed to load Regular font `%s`", self.cfg.display.truetype)
+			self.cfg.display.truetype = nil
+		end
+	end
+	if self.cfg.display.truetype_bold ~= nil then
+		if FBInk.fbink_add_ot_font(self.cfg.display.truetype_bold, C.FNT_BOLD) ~= 0 then
+			logger.warn("Failed to load Bold font `%s`", self.cfg.display.truetype_bold)
+			self.cfg.display.truetype_bold = nil
+		end
+	end
+	if self.cfg.display.truetype_italic ~= nil then
+		if FBInk.fbink_add_ot_font(self.cfg.display.truetype_italic, C.FNT_ITALIC) ~= 0 then
+			logger.warn("Failed to load Italic font `%s`", self.cfg.display.truetype_italic)
+			self.cfg.display.truetype_italic = nil
+		end
+	end
+	if self.cfg.display.truetype_bolditalic ~= nil then
+		if FBInk.fbink_add_ot_font(self.cfg.display.truetype_bolditalic, C.FNT_BOLD_ITALIC) ~= 0 then
+			logger.warn("Failed to load BoldItalic font `%s`", self.cfg.display.truetype_bolditalic)
+			self.cfg.display.truetype_bolditalic = nil
+		end
+	end
+
+	-- Do we use the OT codepath at all?
+	if self.cfg.display.truetype or
+	   self.cfg.display.truetype_bold or
+	   self.cfg.display.truetype_italic or
+	   self.cfg.display.truetype_bolditalic then
+		self.with_ot = true
+	else
+		self.with_ot = false
+	end
+
+	-- OT setup
+	self.fbink_ot.size_pt = self.cfg.display.truetype_size
+	self.fbink_ot.size_px = self.cfg.display.truetype_px
+	self.fbink_ot.margins.top = self.cfg.display.truetype_y
+	self.fbink_ot.margins.left = self.cfg.display.truetype_x
+	if self.cfg.display.truetype_bold or
+	   self.cfg.display.truetype_italic or
+	   self.cfg.display.truetype_bolditalic then
+		self.fbink_ot.is_formatted = true
+	else
+		self.fbink_ot.is_formatted = false
+	end
+	if self.with_ot then
+		self.fbink_cfg.fg_color = fbink_util.FGColor(self.cfg.display.truetype_fg)
+		self.fbink_cfg.bg_color = fbink_util.BGColor(self.cfg.display.truetype_bg)
+	else
+		self.fbink_cfg.fg_color = fbink_util.FGColor(self.cfg.display.fg_color)
+		self.fbink_cfg.bg_color = fbink_util.BGColor(self.cfg.display.bg_color)
 	end
 
 	-- Some settings require an fbink_init to take...
