@@ -522,13 +522,13 @@ function NanoClock:waitForEvent()
 
 					if len == 0 then
 						-- Should never happen
-						local errno = C.EPIPE;
+						local errno = C.EPIPE
 						self:die(string.format("read: %s", C.strerror(errno)))
 					end
 
 					if len ~= ffi.sizeof(damage) then
 						-- Should *also* never happen ;p.
-						local errno = C.EINVAL;
+						local errno = C.EINVAL
 						self:die(string.format("read: %s", C.strerror(errno)))
 					end
 
