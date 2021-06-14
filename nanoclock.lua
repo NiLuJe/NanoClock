@@ -85,6 +85,7 @@ end
 
 function NanoClock:initFBInk()
 	self.fbink_cfg = ffi.new("FBInkConfig")
+	self.fbink_ot = ffi.new("FBInkOTConfig")
 
 	-- Enable logging to syslog ASAP
 	self.fbink_cfg.is_verbose = false
@@ -262,6 +263,7 @@ function NanoClock:getFrontLightLevel()
 		local brightness = util.read_int_file("/sys/class/backlight/mxc_msp430.0/actual_brightness")
 		return tostring(brightness) .. "%"
 	else
+		-- Otherwise, we have to look inside Nickel's config...
 		-- Avoid parsing it again if it hasn't changed, like :reloadConfig()
 		local nickel_mtime = lfs.attributes(self.nickel_config, "modification")
 		if not nickel_mtime then
@@ -350,6 +352,9 @@ function NanoClock:displayClock()
 			logger.notice("Handled a framebuffer rotation change")
 		end
 	end
+
+	-- Deal with nightmode shenanigans...
+	self.fbink_cfg.is_nightmode = self.need_nightmode
 
 	-- TODO: Actually honor settings ;p.
 	local ret = FBInk.fbink_print(self.fbink_fd, self.clock_string, self.fbink_cfg)
@@ -479,6 +484,13 @@ function NanoClock:waitForEvent()
 									h = damage.data.update_region.height,
 								}
 								if update_area:intersectWith(self.clock_area) then
+									-- We'll need to know if nightmode is currently enabled to do the same...
+									if bit.band(damage.data.flags, C.EPDC_FLAG_ENABLE_INVERSION) then
+										self.need_nightmode = true
+									else
+										self.need_nightmode = false
+									end
+
 									self:displayClock()
 								else
 									logger.dbg("No clock update necessary: damage rectangle %s does not intersect with the clock's %s",
