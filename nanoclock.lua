@@ -18,9 +18,9 @@ local ffi = require("ffi")
 local C = ffi.C
 
 require("ffi/fbink_h")
+require("ffi/mxcfb_h")
 require("ffi/mxcfb_damage_h")
 require("ffi/posix_h")
-require("ffi/mxcfb_h")
 
 -- Mangle package search paths to sart looking inside lib/ first...
 package.path =
