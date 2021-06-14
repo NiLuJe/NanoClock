@@ -59,6 +59,13 @@ LFS_LDFLAGS:=-shared
 # Now that we're done fiddling with flags, let's build stuff!
 LFS_SRCS:=luafilesystem/src/lfs.c
 
+# NOTE: The mxc_epdc_fb_damage kernel modules are shipped as binaries in the repo, because building Kobo kernels is a PITA.
+#       The various quirks involved in building those are documented in my x-compile script: https://svn.ak-team.com/svn/Configs/trunk/Kindle/Misc/x-compile.sh
+#       (Right after the "Building fuse" step).
+# NOTE: As for the actual in-repo binaries:
+#       * mk5/mx50-ntx is built from the H2O kernel (https://github.com/kobolabs/Kobo-Reader/tree/master/hw/imx507-aurah2o)
+#       * mk7/mx6sll-ntx is built from the Forma kernel (https://github.com/kobolabs/Kobo-Reader/tree/master/hw/imx6sll-forma)
+
 default: all
 
 LFS_OBJS:=$(addprefix $(OUT_DIR)/, $(LFS_SRCS:.c=.o))
