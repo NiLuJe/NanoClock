@@ -381,7 +381,7 @@ end
 
 local function patternSubstitutions(m)
 	-- NOTE: We pass a function to gsub instead of a simple replacement table in order to be able to only
-	--       actually run the function that generate the substitution string as necessary...
+	--       actually run the function that generates the substitution string as necessary...
 	if m == "{battery}" then
 		return NanoClock:getBatteryLevel()
 	elseif m == "{frontlight}" then
