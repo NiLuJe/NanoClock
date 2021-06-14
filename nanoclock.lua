@@ -178,7 +178,7 @@ end
 function NanoClock:handleConfig()
 	-- Was an uninstall requested?
 	if self.cfg.global.uninstall ~= 0 then
-		os.rename(self.config_path, self.addon_folder .. "/uninstalled-" .. os.date("+%Y%m%d-%H%M") .. ".ini")
+		os.rename(self.config_path, self.addon_folder .. "/uninstalled-" .. os.date("%Y%m%d-%H%M") .. ".ini")
 		os.remove("/etc/udev/rules.d/99-nanoclock.rules")
 		os.execute("rm -rf /usr/local/NanoClock")
 		self:die("Uninstalled!")
