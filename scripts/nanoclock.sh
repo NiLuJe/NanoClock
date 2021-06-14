@@ -31,8 +31,8 @@ eval "$(${FBINK_BIN} -e)"
 DEVICE_GEN="mk$(echo "${devicePlatform}" | sed -re 's/^.+([[:digit:]]+)$/\1/')"
 
 PLATFORM="freescale"
-if [ "$(dd if=/dev/mmcblk0 bs=512 skip=1024 count=1 | grep -c "HW CONFIG")" = 1 ] ; then
-	CPU="$(ntx_hwconfig -s -p /dev/mmcblk0 CPU)"
+if [ "$(dd if=/dev/mmcblk0 bs=512 skip=1024 count=1 2>/dev/null | grep -c "HW CONFIG")" = 1 ] ; then
+	CPU="$(ntx_hwconfig -s -p /dev/mmcblk0 CPU 2>/dev/null)"
 	PLATFORM="${CPU}-ntx"
 fi
 
