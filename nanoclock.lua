@@ -487,6 +487,8 @@ function NanoClock:displayClock()
 end
 
 function NanoClock:waitForEvent()
+	local damage = ffi.new("mxcfb_damage_update")
+
 	local pfd = ffi.new("struct pollfd")
 	pfd.fd = self.damage_fd
 	pfd.events = C.POLLIN
@@ -503,7 +505,6 @@ function NanoClock:waitForEvent()
 
 		if poll_num > 0 then
 			if bit.band(pfd.revents, C.POLLIN) then
-				local damage = ffi.new("mxcfb_damage_update")
 				local overflowed = false
 
 				while true do
