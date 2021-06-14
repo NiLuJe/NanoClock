@@ -1,0 +1,13 @@
+[submodule "FBInk"]
+	path = FBInk
+	url = https://github.com/NiLuJe/FBInk.git
+	fetchRecurseSubmodules = true
+[submodule "mxc_epdc_fb_damage"]
+	path = mxc_epdc_fb_damage
+	url = https://github.com/NiLuJe/mxc_epdc_fb_damage.git
+[submodule "LuaJIT"]
+	path = LuaJIT
+	url = https://github.com/LuaJIT/LuaJIT.git
+[submodule "luafilesystem"]
+	path = luafilesystem
+	url = https://github.com/keplerproject/luafilesystem.git
