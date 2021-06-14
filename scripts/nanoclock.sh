@@ -1,5 +1,14 @@
 #!/bin/sh
 
+# Misc helper functions
+is_integer()
+{
+	# Cheap trick ;)
+	[ "${1}" -eq "${1}" ] 2>/dev/null
+	return $?
+}
+
+
 # Settings
 SCRIPT_NAME="$(basename "${0}")"
 NANOCLOCK_DIR="/usr/local/NanoClock"
@@ -22,6 +31,18 @@ PLATFORM="freescale"
 if [ "$(dd if=/dev/mmcblk0 bs=512 skip=1024 count=1 | grep -c "HW CONFIG")" = 1 ] ; then
 	CPU="$(ntx_hwconfig -s -p /dev/mmcblk0 CPU)"
 	PLATFORM="${CPU}-ntx"
+fi
+
+# Check the FW version, to see if we can enforce nightmode support in FBInk if we detect a recent enough version...
+NICKEL_BUILD="$(awk 'BEGIN {FS=","}; {split($3, FW, "."); print FW[3]};' "/mnt/onboard/.kobo/version")"
+
+# If it's sane, and newer than 4.2.8432, enforce HW inversion support
+# This is only useful for the Aura, which used to be crashy on earlier kernels...
+# NOTE: Final Aura kernel is r7860_#2049 built 01/09/17 05:33:13;
+#       FW 4.2.8432 was released February 2017;
+#       the previous FW release was 3.19.5761 in December 2015 (!).
+if is_integer "${NICKEL_BUILD}" && [ "${NICKEL_BUILD}" -ge "8432" ] ; then
+	export FBINK_ALLOW_HW_INVERT=1
 fi
 
 # Load the right kernel module
