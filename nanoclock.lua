@@ -494,7 +494,7 @@ function NanoClock:waitForEvent()
 	pfd.events = C.POLLIN
 
 	while true do
-		local poll_num = C.poll(pfd, 1, -1);
+		local poll_num = C.poll(pfd, 1, -1)
 
 		if poll_num == -1 then
 			local errno = ffi.errno()
