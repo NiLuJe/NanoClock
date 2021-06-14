@@ -52,6 +52,10 @@ local NanoClock = {
 	print_failed = false,
 	nickel_mtime = 0,
 	fl_brightness = "??",
+
+	-- I18N stuff
+	en_days = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" },
+	en_months = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" },
 }
 
 function NanoClock:die(msg)
@@ -211,7 +215,6 @@ function NanoClock:handleConfig()
 			table.insert(user_days, day)
 		end
 
-		self.en_days = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" }
 		local u_days = { "1", "2", "3", "4", "5", "6", "7" }
 		self.days_map = {}
 		for k, v in ipairs(u_days) do
@@ -225,7 +228,6 @@ function NanoClock:handleConfig()
 			table.insert(user_months, month)
 		end
 
-		self.en_months = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" }
 		local m_months = { "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12" }
 		self.months_map = {}
 		for k, v in ipairs(m_months) do
@@ -373,7 +375,7 @@ end
 function NanoClock:getUserMonth()
 	local m_month = os.date("%m")
 	if not self.months_map then
-		return self.en_days[m_month]
+		return self.en_months[m_month]
 	end
 
 	return self.months_map[m_month]
