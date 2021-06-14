@@ -20,7 +20,6 @@ local C = ffi.C
 require("ffi/fbink_h")
 require("ffi/mxcfb_damage_h")
 require("ffi/posix_h")
--- TODO: nightmode flag detection
 require("ffi/mxcfb_h")
 
 -- Mangle package search paths to sart looking inside lib/ first...
@@ -382,8 +381,12 @@ function NanoClock:prepareClock()
 	-- Check if the config has been updated, and reload it if necessary...
 	self:reloadConfig()
 
-	-- TODO: Actually honor settings ;p.
-	self.clock_string = os.date("%X")
+	-- Run the appropriate user format string through strftime...
+	if self.with_ot then
+		self.clock_string = os.date(self.cfg.display.truetype_format)
+	else
+		self.clock_string = os.date(self.cfg.display.format)
+	end
 
 	-- Do we have substitutions to handle?
 	if not self.clock_string:find("%b{}") then
@@ -418,8 +421,13 @@ function NanoClock:displayClock()
 		end
 	end
 
-	-- TODO: Actually honor settings ;p.
-	local ret = FBInk.fbink_print(self.fbink_fd, self.clock_string, self.fbink_cfg)
+	-- Finally, do the thing ;).
+	local ret
+	if self.with_ot then
+		ret = FBInk.fbink_print_ot(self.fbink_fd, self.clock_string, self.fbink_ot, self.fbink_cfg, nil)
+	else
+		ret = FBInk.fbink_print(self.fbink_fd, self.clock_string, self.fbink_cfg)
+	end
 	if ret < 0 then
 		logger.warn("FBInk failed to display the string `%s`", self.clock_string)
 
