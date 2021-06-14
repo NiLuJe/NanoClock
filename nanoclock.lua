@@ -532,7 +532,7 @@ function NanoClock:waitForEvent()
 						self:die(string.format("read: %s", C.strerror(errno)))
 					end
 
-					-- Okay, check that weiterating over a valid event.
+					-- Okay, check that we're iterating over a valid event.
 					if damage.format == C.DAMAGE_UPDATE_DATA_V1_NTX or
 					   damage.format == C.DAMAGE_UPDATE_DATA_V1 or
 					   damage.format == C.DAMAGE_UPDATE_DATA_V2 then
