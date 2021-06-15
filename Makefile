@@ -63,8 +63,12 @@ LFS_SRCS:=luafilesystem/src/lfs.c
 #       The various quirks involved in building those are documented in my x-compile script: https://svn.ak-team.com/svn/Configs/trunk/Kindle/Misc/x-compile.sh
 #       (Right after the "Building fuse" step).
 # NOTE: As for the actual in-repo binaries:
-#       * mk5/mx50-ntx is built from the H2O kernel (https://github.com/kobolabs/Kobo-Reader/tree/master/hw/imx507-aurah2o)
+#       * mk3/mx50-ntx is built from what's supposedly a Touch A/B kernel (https://github.com/kobolabs/Kobo-Reader/tree/master/hw/imx508/ntx)
+#       * mk4/mx50-ntx is built from the Aura HD kernel (https://github.com/kobolabs/Kobo-Reader/tree/master/hw/imx507-aurahd)
+#       * mk5/mx50-ntx is built from the H2O kernel (https://github.com/kobolabs/Kobo-Reader/tree/master/hw/imx507-aurah2o) (Binary identical to mk4/mx50-ntx, which makes sense)
+#       * mk6/mx6sl-ntx is built from the Glo HD kernel (https://github.com/kobolabs/Kobo-Reader/tree/master/hw/imx6sl-glohd)
 #       * mk7/mx6sll-ntx is built from the Forma kernel (https://github.com/kobolabs/Kobo-Reader/tree/master/hw/imx6sll-forma)
+#       * mk7/mx6ull-ntx is built from the Nia kernel (https://github.com/kobolabs/Kobo-Reader/tree/master/hw/imx6ull-nia) (Binary identical to mk7/mx6sll-ntx, which makes sense)
 
 default: all
 
