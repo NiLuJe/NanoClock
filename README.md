@@ -7,7 +7,8 @@ Housed [here on GitHub](https://github.com/NiLuJe/NanoClock).
 
 In the spirit of [MiniClock](https://www.mobileread.com/forums/showpost.php?p=3762123&postcount=6), this aims to display a *persistent* clock on your Kobo's screen, positioned and formatted to your liking.
 
-Unlike the original MiniClock, or my own [previous take](https://www.mobileread.com/forums/showpost.php?p=3898594&postcount=311) on it, this no longer relies on things that don't really have anything to do with the screen to detect screen updates, which means it no longer suffers from any timing related mishaps, is somewhat simpler, and should basically transparently bake the clock to every meaningful update with no visible lag.
+Unlike the original MiniClock, or my own [previous take](https://www.mobileread.com/forums/showpost.php?p=3898594&postcount=311) on it, this no longer relies on things that don't really have anything to do with the screen to detect screen updates, which means it no longer suffers from any timing related mishaps, is somewhat simpler, and should basically transparently bake the clock intto every meaningful screen update with no visible lag.  
+It also no longer requires firmware patching to handle physical buttons.
 
 It's also written entirely in Lua, instead of a mix of shell & C, which should also help make it more efficient.
 
