@@ -17,7 +17,7 @@ The magic *does* require injecting some [code](https://github.com/NiLuJe/mxc_epd
 
 Visit the [MobileRead thread](TODO) to download the install package, and simply unpack the ZIP archive to the USB root of your Kobo when it's plugged to a computer. Do *NOT* try to open the archive and drag/copy stuff manually, just "Extract to" the root of your device, and say yes to replacing existing content if/when applicable (the directory structure & content have to be preserved *verbatim*, and there are hidden *nix folders in there that your OS may hide from you)! Then, just eject your device safely, and wait for it to reboot after the "update" process.
 
-If all goes well, you should see the clock appear, according to the default settings. Take a look at the [`.adds/nanoclock/nanoclock.ini`](config/nanoclock.ini) file on your device to set it up to your liking.  
+If all goes well, you should see the clock appear a few seconds after the device finishes booting, according to the default settings. Take a look at the [`.adds/nanoclock/nanoclock.ini`](config/nanoclock.ini) file on your device to set it up to your liking.  
 NOTE: Most settings are compatible with their MiniClock counterparts, but the file itself has changed format, so do double-check things manually.
 Changes to the config file should be picked up immediately.
 
