@@ -213,7 +213,7 @@ function NanoClock:handleConfig()
 	-- Handle the localization mappings...
 	if self.cfg.display.days ~= nil then
 		local user_days = {}
-		for day in self.cfg.display.days:gmatch("[^%s]+") do
+		for day in self.cfg.display.days:gmatch("%S+") do
 			table.insert(user_days, day)
 		end
 
@@ -225,7 +225,7 @@ function NanoClock:handleConfig()
 
 	if self.cfg.display.months ~= nil then
 		local user_months = {}
-		for month in self.cfg.display.months:gmatch("[^%s]+") do
+		for month in self.cfg.display.months:gmatch("%S+") do
 			table.insert(user_months, month)
 		end
 
