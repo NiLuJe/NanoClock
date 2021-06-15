@@ -68,11 +68,14 @@ function NanoClock:init()
 	self.config_path = self.addon_folder .. "/" .. self.config_file
 
 	-- If we don't have a custom config file, copy the defaults
-	if C.access(self.config_path, C.F_OK) ~= 0 then
-		if C.access(self.defaults_path, C.F_OK) ~= 0 then
+	if lfs.attributes(self.config_path, "mode") ~= "file" then
+		if lfs.attributes(self.defaults_path, "mode") ~= "file" then
 			self:die("Default config file is missing, aborting!")
 		end
 
+		if lfs.attributes(self.addon_folder, "mode") ~= "directory" then
+			util.makePath(self.addon_folder)
+		end
 		util.copyFile(self.defaults_path, self.config_path)
 	end
 

@@ -1,6 +1,8 @@
 -- Pilfered from KOReader <https://github.com/koreader/koreader-base/blob/master/ffi/util.lua>
 -- SPDX-License-Identifier: AGPL-3.0-or-later
 
+local lfs = require("lfs")
+
 local util = {}
 
 --- Copies file.
@@ -19,6 +21,15 @@ function util.copyFile(from, to)
 		tfp:write(bytes)
 	end
 	tfp:close()
+end
+
+--- mkdir -p
+function util.makePath(path)
+	local parent = path:sub(1, 1) == "/" and "/" or ""
+	for component in path:gmatch("[^/]+") do
+		parent = parent .. component .. "/"
+		lfs.mkdir(parent)
+	end
 end
 
 --- Read single-line files (e.g., sysfs)
