@@ -557,7 +557,7 @@ function NanoClock:waitForEvent()
 
 						if damage.queue_size > 1 then
 							-- We'll never react to anything that isn't the final event in the queue.
-							logger.warn("Stale damage event (%d more ahead)!",
+							logger.dbg("Stale damage event (%d more ahead)!",
 							            ffi.cast("int", damage.queue_size - 1))
 						else
 							-- If we're at the end of the queue *after* an overflow,
