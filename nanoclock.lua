@@ -2,7 +2,8 @@
 
 --[[
 	NanoClock: A persnickety clock for Kobo devices
-	Inspired by @frostschutz's MiniClock <https://github.com/frostschutz/Kobo/tree/master/MiniClock>.
+	Inspired by @frostschutz's MiniClock <https://github.com/frostschutz/Kobo/tree/master/MiniClock>,
+	and my own previous take on it at <https://github.com/NiLuJe/Kobo/tree/master/MiniClock>.
 
 	Copyright (C) 2021 NiLuJe <ninuje@gmail.com>
 	SPDX-License-Identifier: GPL-3.0-or-later
