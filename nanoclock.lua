@@ -221,11 +221,16 @@ function NanoClock:handleConfig()
 	-- Massage various settings into a usable form
 	if self.cfg.display.backgroundless ~= 0 then
 		self.fbink_cfg.is_bgless = true
+
+		-- Auto-refresh would lead to overlapping text
+		self.cfg.display.autorefresh = 0
 	else
 		self.fbink_cfg.is_bgless = false
 	end
 	if self.cfg.display.overlay ~= 0 then
 		self.fbink_cfg.is_overlay = true
+
+		self.cfg.display.autorefresh = 0
 	else
 		self.fbink_cfg.is_overlay = false
 	end
@@ -655,7 +660,9 @@ function NanoClock:waitForEvent()
 			end
 
 			if bit.band(pfds[1].revents, C.POLLIN) ~= 0 then
-				self:displayClock()
+				if self.cfg.display.autorefresh ~= 0 then
+					self:displayClock()
+				end
 
 				-- We don't actually care about the expiration count, so just read to clear the event
 				C.read(self.clock_fd, exp, ffi.sizeof(exp[0]))
