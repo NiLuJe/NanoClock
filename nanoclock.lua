@@ -460,16 +460,16 @@ function NanoClock:handleFBInkReinit()
 		-- Refresh our state copy
 		FBInk.fbink_get_state(self.fbink_cfg, self.fbink_state)
 
-		if bit.band(reinit, C.OK_BPP_CHANGE) then
+		if bit.band(reinit, C.OK_BPP_CHANGE) ~= 0 then
 			logger.notice("Handled a framebuffer bitdepth change")
 		end
 
 		-- In case of rotation, our clock area is now meaningless,
 		-- so, make sure to invalidate it so we force a repaint at the "new" coordinates...
-		if bit.band(reinit, C.OK_LAYOUT_CHANGE) then
+		if bit.band(reinit, C.OK_LAYOUT_CHANGE) ~= 0 then
 			logger.notice("Handled a framebuffer orientation change")
 			self:invalidateClockArea()
-		elseif bit.band(reinit, C.OK_ROTA_CHANGE) then
+		elseif bit.band(reinit, C.OK_ROTA_CHANGE) ~= 0 then
 			logger.notice("Handled a framebuffer rotation change")
 			self:invalidateClockArea()
 		end
