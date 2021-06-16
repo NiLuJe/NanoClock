@@ -88,6 +88,7 @@ end
 function NanoClock:initFBInk()
 	self.fbink_cfg = ffi.new("FBInkConfig")
 	self.fbink_ot = ffi.new("FBInkOTConfig")
+	self.fbink_state = ffi.new("FBInkState")
 
 	-- Enable logging to syslog ASAP
 	self.fbink_cfg.is_verbose = false
@@ -105,13 +106,8 @@ function NanoClock:initFBInk()
 	end
 
 	-- We may need to do some device-specific stuff down the line...
-	local state = ffi.new("FBInkState")
-	FBInk.fbink_get_state(self.fbink_cfg, state)
-	self.device_name = ffi.string(state.device_name)
-	self.device_codename = ffi.string(state.device_codename)
-	self.device_platform = ffi.string(state.device_platform)
-	self.device_id = state.device_id
-	self.can_hw_invert = state.can_hw_invert
+	FBInk.fbink_get_state(self.fbink_cfg, self.fbink_state)
+	self.device_platform = ffi.string(self.fbink_state.device_platform)
 end
 
 function NanoClock:initDamage()
@@ -461,6 +457,9 @@ end
 function NanoClock:handleFBInkReinit()
 	local reinit = FBInk.fbink_reinit(self.fbink_fd, self.fbink_cfg)
 	if reinit > 0 then
+		-- Refresh our state copy
+		FBInk.fbink_get_state(self.fbink_cfg, self.fbink_state)
+
 		if bit.band(reinit, C.OK_BPP_CHANGE) then
 			logger.notice("Handled a framebuffer bitdepth change")
 		end
@@ -515,9 +514,9 @@ function NanoClock:displayClock()
 	-- Reset the damage tracker
 	self.marker_found = false
 
-	-- Remember our damage area (in the same potentially rotated state as the actual ioctls),
+	-- Remember our damage area (if necessary, in the same quirky rotated state as the actual ioctls),
 	-- to detect if we actually need to repaint...
-	local rect = FBInk.fbink_get_last_rect(true)
+	local rect = FBInk.fbink_get_last_rect(self.fbink_state.is_ntx_quirky_landscape)
 	-- We might get an empty rectangle if the previous update failed,
 	-- and we *never* want to store an empty rectangle in self.damage_area,
 	-- because nothing can ever intersect with it, which breaks the area check ;).
