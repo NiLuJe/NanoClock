@@ -1,4 +1,4 @@
-# NanoCLock
+# NanoClock
 
 Licensed under the [GPLv3+](/LICENSE).  
 Housed [here on GitHub](https://github.com/NiLuJe/NanoClock).
