@@ -36,6 +36,7 @@ ssize_t write(int, const void *, size_t);
 ssize_t read(int, void *, size_t);
 int kill(int, int) __attribute__((nothrow, leaf));
 int getpid(void) __attribute__((nothrow, leaf));
+typedef long unsigned int nfds_t;
 struct pollfd {
   int fd;
   short int events;
@@ -45,7 +46,7 @@ static const int POLLIN = 1;
 static const int POLLOUT = 4;
 static const int POLLERR = 8;
 static const int POLLHUP = 16;
-int poll(struct pollfd *, long unsigned int, int);
+int poll(struct pollfd *, nfds_t, int);
 static const int PROT_READ = 1;
 static const int PROT_WRITE = 2;
 static const int MAP_SHARED = 1;

@@ -121,6 +121,29 @@ function NanoClock:initDamage()
 	end
 end
 
+function NanoClock:initTimer()
+	self.clock_fd = C.timerfd_create(C.CLOCK_REALTIME, bit.bor(C.TFD_NONBLOCK, C.TFD_CLOEXEC))
+	if self.clock_fd == -1 then
+		local errno = ffi.errno()
+		self:die(string.format("timerfd_create: %s", C.strerror(errno)))
+	end
+
+	-- Arm it to get a tick on every minute, on the dot.
+	local now_ts = ffi.new("struct timespec")
+	C.clock_gettime(C.CLOCK_REALTIME, now_ts)
+	local clock_timer = ffi.new("struct itimerspec")
+	-- Round the current timestamp up to the next multiple of 60 to get us the next minute on the dot.
+	clock_timer.it_value.tv_sec = (now_ts.tv_sec + 60 - 1) / 60 * 60
+	clock_timer.it_value.tv_nsec = 0
+	-- Tick every minute
+	clock_timer.it_interval.tv_sec = 60
+	clock_timer.it_interval.tv_nsec = 0
+	if C.timerfd_settime(self.clock_fd, C.TFD_TIMER_ABSTIME, clock_timer, nil) == -1 then
+		local errno = ffi.errno()
+		self:die(string.format("timerfd_settime: %s", C.strerror(errno)))
+	end
+end
+
 function NanoClock:initConfig()
 	local config_mtime = lfs.attributes(self.config_path, "modification")
 	if not config_mtime then
@@ -504,12 +527,14 @@ end
 function NanoClock:waitForEvent()
 	local damage = ffi.new("mxcfb_damage_update")
 
-	local pfd = ffi.new("struct pollfd")
-	pfd.fd = self.damage_fd
-	pfd.events = C.POLLIN
+	local pfds = ffi.new("struct pollfd[2]")
+	pfds[0].fd = self.damage_fd
+	pfds[0].events = C.POLLIN
+	pfds[1].fd = self.clock_fd
+	pfds[1].events = C.POLLIN
 
 	while true do
-		local poll_num = C.poll(pfd, 1, -1)
+		local poll_num = C.poll(pfds, 2, -1)
 
 		if poll_num == -1 then
 			local errno = ffi.errno()
@@ -517,7 +542,7 @@ function NanoClock:waitForEvent()
 				self:die(string.format("poll: %s", C.strerror(errno)))
 			end
 		elseif poll_num > 0 then
-			if bit.band(pfd.revents, C.POLLIN) ~= 0 then
+			if bit.band(pfds[0].revents, C.POLLIN) ~= 0 then
 				local overflowed = false
 
 				while true do
@@ -627,6 +652,14 @@ function NanoClock:waitForEvent()
 					end
 				end
 			end
+
+			if bit.band(pfds[1].revents, C.POLLIN) ~= 0 then
+				self:displayClock()
+
+				-- We don't actually care about the expiration count, so just read to clear the event
+				local exp = ffi.new("uint64_t")
+				C.read(self.clock_fd, exp, ffi.sizeof(exp))
+			end
 		end
 	end
 end
@@ -635,6 +668,7 @@ function NanoClock:main()
 	self:init()
 	self:initFBInk()
 	self:initDamage()
+	self:initTimer()
 	self:initConfig()
 	logger.info("Initialized NanoClock %s with FBInk %s", self.version, FBInk.fbink_version())
 
