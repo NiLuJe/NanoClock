@@ -99,4 +99,39 @@ static const int LOG_DEBUG = 7;
 void openlog(const char *, int, int);
 void syslog(int, const char *, ...);
 void closelog(void);
+static const int CLOCK_REALTIME = 0;
+static const int CLOCK_REALTIME_COARSE = 5;
+static const int CLOCK_MONOTONIC = 1;
+static const int CLOCK_MONOTONIC_COARSE = 6;
+static const int CLOCK_MONOTONIC_RAW = 4;
+static const int CLOCK_BOOTTIME = 7;
+static const int CLOCK_TAI = 11;
+typedef long int time_t;
+struct timespec {
+  time_t tv_sec;
+  long int tv_nsec;
+};
+typedef int clockid_t;
+int clock_getres(clockid_t, struct timespec *) __attribute__((nothrow, leaf));
+int clock_gettime(clockid_t, struct timespec *) __attribute__((nothrow, leaf));
+int clock_settime(clockid_t, const struct timespec *) __attribute__((nothrow, leaf));
+static const int TIMER_ABSTIME = 1;
+int clock_nanosleep(clockid_t, int, const struct timespec *, struct timespec *);
+static const int TFD_NONBLOCK = 2048;
+static const int TFD_CLOEXEC = 524288;
+static const int TFD_TIMER_ABSTIME = 1;
+static const int TFD_TIMER_CANCEL_ON_SET = 2;
+struct itimerspec {
+  struct timespec it_interval;
+  struct timespec it_value;
+};
+int timerfd_create(int, int) __attribute__((nothrow, leaf));
+int timerfd_settime(int, int, const struct itimerspec *, struct itimerspec *) __attribute__((nothrow, leaf));
+int timerfd_gettime(int, struct itimerspec *) __attribute__((nothrow, leaf));
 ]]
+
+-- clock_gettime & friends require librt on old glibc (< 2.17) versions...
+-- Load it in the global namespace to make it easier on callers...
+-- NOTE: There's no librt.so symlink, so, specify the SOVER, but not the full path,
+--       in order to let the dynamic loader figure it out on its own (e.g.,  multilib).
+pcall(ffi.load, "rt.so.1", true)
