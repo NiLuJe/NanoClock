@@ -75,24 +75,25 @@ Returns true if self does not share any area with rect_b
 @tparam Geom rect_b
 ]]
 function Geom:notIntersectWith(rect_b)
-	if not rect_b or rect_b:area() == 0 then return true end
-
-	if (self.x >= (rect_b.x + rect_b.w))
-	or (self.y >= (rect_b.y + rect_b.h))
-	or (rect_b.x >= (self.x + self.w))
-	or (rect_b.y >= (self.y + self.h)) then
-		return true
-	end
-	return false
+	return not self:intersectWith(rect_b)
 end
 
 --[[--
 Returns true if self geom shares area with rect_b.
+c.f., https://silentmatt.com/rectangle-intersection/
 
 @tparam Geom rect_b
 ]]
 function Geom:intersectWith(rect_b)
-	return not self:notIntersectWith(rect_b)
+	if not rect_b or rect_b:area() == 0 then return false end
+
+	if (self.x < (rect_b.x + rect_b.w))
+	and ((self.x + self.w) > rect_b.x)
+	and (self.y < (rect_b.y + rect_b.h))
+	and ((self.y + self.h) > rect_b.y) then
+		return true
+	end
+	return false
 end
 
 --[[--
