@@ -20,8 +20,8 @@ if ! cd "${NANOCLOCK_DIR}" ; then
 	exit
 fi
 
-# Wait until nickel is up
-while ! pidof nickel >/dev/null 2>&1 || ! grep -q /mnt/onboard /proc/mounts ; do
+# Wait until onboard is mounted, nickel is up, and the boot anim is done.
+until grep -q /mnt/onboard /proc/mounts && pkill -0 nickel && ! pkill -0 on-animator.sh ; do
 	sleep 5
 done
 
