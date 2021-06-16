@@ -507,9 +507,7 @@ function NanoClock:waitForEvent()
 			if errno ~= C.EINTR then
 				self:die(string.format("poll: %s", C.strerror(errno)))
 			end
-		end
-
-		if poll_num > 0 then
+		elseif poll_num > 0 then
 			if bit.band(pfd.revents, C.POLLIN) then
 				local overflowed = false
 
@@ -526,97 +524,93 @@ function NanoClock:waitForEvent()
 						if errno ~= C.EINTR then
 							self:die(string.format("read: %s", C.strerror(errno)))
 						end
-					end
-
-					if len == 0 then
+					elseif len == 0 then
 						-- Should never happen
 						local errno = C.EPIPE
 						self:die(string.format("read: %s", C.strerror(errno)))
-					end
-
-					if len ~= ffi.sizeof(damage) then
+					elseif len ~= ffi.sizeof(damage) then
 						-- Should *also* never happen ;p.
 						local errno = C.EINVAL
 						self:die(string.format("read: %s", C.strerror(errno)))
-					end
-
-					-- Okay, check that we're iterating over a valid event.
-					if damage.format == C.DAMAGE_UPDATE_DATA_V1_NTX or
-					   damage.format == C.DAMAGE_UPDATE_DATA_V1 or
-					   damage.format == C.DAMAGE_UPDATE_DATA_V2 then
-						-- Track our own marker so we can *avoid* reacting to it,
-						-- because that'd result in a neat infinite loop ;).
-						if damage.data.update_marker == self.clock_marker then
-							self.marker_found = true
-						end
-
-						-- If there was an overflow, we may *never* find our previous clock marker,
-						-- so remember that so we can deal with it once we're caught up...
-						-- (An overflow obviously implies that we've got a full queue ahead of us,
-						-- i.e., queue_size == 63).
-						if damage.overflow_notify > 0 then
-							logger.notice("Damage event queue overflow! %d events have been lost!",
-							              ffi.cast("int", damage.overflow_notify))
-							overflowed = true
-						end
-
-						if damage.queue_size > 1 then
-							-- We'll never react to anything that isn't the final event in the queue.
-							logger.dbg("Stale damage event (%d more ahead)!",
-							            ffi.cast("int", damage.queue_size - 1))
-						else
-							-- If we're at the end of the queue *after* an overflow,
-							-- assume we actually caught our own marker,
-							-- as it might have been lost.
-							if overflowed then
-								self.marker_found = true
-								overflowed = false
-							end
-
-							-- Otherwise, check that it is *not* our own damage event,
-							-- *and* that we previously *did* see ours...
-							if self.marker_found and damage.data.update_marker ~= self.clock_marker then
-								-- Then, that it actually drew over our clock...
-								local update_area = Geom:new{
-									x = damage.data.update_region.left,
-									y = damage.data.update_region.top,
-									w = damage.data.update_region.width,
-									h = damage.data.update_region.height,
-								}
-								if update_area:intersectWith(self.clock_area) then
-									-- We'll need to know if nightmode is currently enabled to do the same...
-									if bit.band(damage.data.flags, C.EPDC_FLAG_ENABLE_INVERSION) ~= 0 then
-										self.fbink_cfg.is_nightmode = true
-									else
-										self.fbink_cfg.is_nightmode = false
-									end
-
-									self:displayClock()
-								else
-									logger.dbg("No clock update necessary: damage rectangle %s does not intersect with the clock's %s",
-										tostring(update_area), tostring(self.clock_area))
-								end
-							else
-								logger.dbg("No clock update necessary: damage marker: %u vs. clock marker: %u (found: %s)",
-										ffi.cast("unsigned int", damage.data.update_marker),
-										ffi.cast("unsigned int", self.clock_marker),
-										tostring(self.marker_found))
-
-								-- Do attempt to recover from print failures, in case they stem from a config issue...
-								-- NOTE: This would be mildly less icky if we tracked config updates via inotify,
-								--       in which case we'd just have to stick a :displayClock() at the end of :reloadConfig() ;).
-								if self.print_failed then
-									if self:reloadConfig() then
-										logger.notice("Previous clock update failed, but config was modified since, trying again")
-										self:displayClock()
-									end
-								end
-							end
-						end
 					else
-						-- This should admittedly never happen...
-						logger.warn("Invalid damage event (format: %d)!",
-								ffi.cast("int", damage.format))
+						-- Okay, check that we're iterating over a valid event.
+						if damage.format == C.DAMAGE_UPDATE_DATA_V1_NTX or
+						damage.format == C.DAMAGE_UPDATE_DATA_V1 or
+						damage.format == C.DAMAGE_UPDATE_DATA_V2 then
+							-- Track our own marker so we can *avoid* reacting to it,
+							-- because that'd result in a neat infinite loop ;).
+							if damage.data.update_marker == self.clock_marker then
+								self.marker_found = true
+							end
+
+							-- If there was an overflow, we may *never* find our previous clock marker,
+							-- so remember that so we can deal with it once we're caught up...
+							-- (An overflow obviously implies that we've got a full queue ahead of us,
+							-- i.e., queue_size == 63).
+							if damage.overflow_notify > 0 then
+								logger.notice("Damage event queue overflow! %d events have been lost!",
+									ffi.cast("int", damage.overflow_notify))
+								overflowed = true
+							end
+
+							if damage.queue_size > 1 then
+								-- We'll never react to anything that isn't the final event in the queue.
+								logger.dbg("Stale damage event (%d more ahead)!",
+									ffi.cast("int", damage.queue_size - 1))
+							else
+								-- If we're at the end of the queue *after* an overflow,
+								-- assume we actually caught our own marker,
+								-- as it might have been lost.
+								if overflowed then
+									self.marker_found = true
+									overflowed = false
+								end
+
+								-- Otherwise, check that it is *not* our own damage event,
+								-- *and* that we previously *did* see ours...
+								if self.marker_found and damage.data.update_marker ~= self.clock_marker then
+									-- Then, that it actually drew over our clock...
+									local update_area = Geom:new{
+										x = damage.data.update_region.left,
+										y = damage.data.update_region.top,
+										w = damage.data.update_region.width,
+										h = damage.data.update_region.height,
+									}
+									if update_area:intersectWith(self.clock_area) then
+										-- We'll need to know if nightmode is currently enabled to do the same...
+										if bit.band(damage.data.flags, C.EPDC_FLAG_ENABLE_INVERSION) ~= 0 then
+											self.fbink_cfg.is_nightmode = true
+										else
+											self.fbink_cfg.is_nightmode = false
+										end
+
+										self:displayClock()
+									else
+										logger.dbg("No clock update necessary: damage rectangle %s does not intersect with the clock's %s",
+											tostring(update_area), tostring(self.clock_area))
+									end
+								else
+									logger.dbg("No clock update necessary: damage marker: %u vs. clock marker: %u (found: %s)",
+											ffi.cast("unsigned int", damage.data.update_marker),
+											ffi.cast("unsigned int", self.clock_marker),
+											tostring(self.marker_found))
+
+									-- Do attempt to recover from print failures, in case they stem from a config issue...
+									-- NOTE: This would be mildly less icky if we tracked config updates via inotify,
+									--       in which case we'd just have to stick a :displayClock() at the end of :reloadConfig() ;).
+									if self.print_failed then
+										if self:reloadConfig() then
+											logger.notice("Previous clock update failed, but config was modified since, trying again")
+											self:displayClock()
+										end
+									end
+								end
+							end
+						else
+							-- This should admittedly never happen...
+							logger.warn("Invalid damage event (format: %d)!",
+									ffi.cast("int", damage.format))
+						end
 					end
 				end
 			end
