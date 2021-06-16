@@ -480,7 +480,7 @@ function NanoClock:displayClock()
 	self.marker_found = false
 
 	-- Remember our damage area to detect if we actually need to repaint
-	local rect = FBInk.fbink_get_last_rect()
+	local rect = FBInk.fbink_get_last_rect(true)
 	-- We might get an empty rectangle if the previous update failed,
 	-- and we *never* want to store an empty rectangle in self.damage_area,
 	-- because nothing can ever intersect with it, which breaks the area check ;).

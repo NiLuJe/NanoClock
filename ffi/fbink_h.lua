@@ -169,7 +169,7 @@ typedef struct {
   uint8_t glyph_width;
   uint8_t glyph_height;
   bool is_perfect_fit;
-  bool is_pb_sunxi;
+  bool is_sunxi;
   bool is_kindle_legacy;
   bool is_kobo_non_mt;
   uint8_t ntx_boot_rota;
@@ -290,7 +290,7 @@ int fbink_dump(int, FBInkDump *restrict);
 int fbink_region_dump(int, short int, short int, short unsigned int, short unsigned int, const FBInkConfig *restrict, FBInkDump *restrict);
 int fbink_restore(int, const FBInkConfig *restrict, const FBInkDump *restrict);
 int fbink_free_dump_data(FBInkDump *restrict);
-FBInkRect fbink_get_last_rect(void);
+FBInkRect fbink_get_last_rect(bool);
 int fbink_button_scan(int, bool, bool);
 int fbink_wait_for_usbms_processing(int, bool);
 uint8_t fbink_rota_native_to_canonical(uint32_t);
