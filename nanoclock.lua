@@ -133,7 +133,7 @@ function NanoClock:initTimer()
 	C.clock_gettime(C.CLOCK_REALTIME, now_ts)
 	local clock_timer = ffi.new("struct itimerspec")
 	-- Round the current timestamp up to the next multiple of 60 to get us the next minute on the dot.
-	clock_timer.it_value.tv_sec = (now_ts.tv_sec + 60 - 1) / ffi.cast("time_t", 60) * ffi.cast("time_t", 60)
+	clock_timer.it_value.tv_sec = math.floor((now_ts.tv_sec + 60 - 1) / 60) * 60
 	clock_timer.it_value.tv_nsec = 0
 	-- Tick every minute
 	clock_timer.it_interval.tv_sec = 60
