@@ -526,6 +526,7 @@ end
 
 function NanoClock:waitForEvent()
 	local damage = ffi.new("mxcfb_damage_update")
+	local exp = ffi.new("uint64_t")
 
 	local pfds = ffi.new("struct pollfd[2]")
 	pfds[0].fd = self.damage_fd
@@ -657,7 +658,6 @@ function NanoClock:waitForEvent()
 				self:displayClock()
 
 				-- We don't actually care about the expiration count, so just read to clear the event
-				local exp = ffi.new("uint64_t")
 				C.read(self.clock_fd, exp, ffi.sizeof(exp))
 			end
 		end
