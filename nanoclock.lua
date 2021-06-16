@@ -523,7 +523,9 @@ function NanoClock:waitForEvent()
 							break
 						end
 
-						self:die(string.format("read: %s", C.strerror(errno)))
+						if errno ~= C.EINTR then
+							self:die(string.format("read: %s", C.strerror(errno)))
+						end
 					end
 
 					if len == 0 then
