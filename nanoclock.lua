@@ -645,6 +645,7 @@ function NanoClock:waitForEvent()
 									if self.print_failed then
 										if self:reloadConfig() then
 											logger.notice("Previous clock update failed, but config was modified since, trying again")
+											self:handleFBInkReinit()
 											self:displayClock()
 										end
 									end
@@ -661,6 +662,7 @@ function NanoClock:waitForEvent()
 
 			if bit.band(pfds[1].revents, C.POLLIN) ~= 0 then
 				if self.cfg.display.autorefresh ~= 0 then
+					self:handleFBInkReinit()
 					self:displayClock()
 				end
 
