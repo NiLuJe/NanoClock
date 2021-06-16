@@ -427,25 +427,37 @@ function NanoClock:prepareClock()
 	return true
 end
 
-function NanoClock:displayClock()
-	if not self:prepareClock() then
-		-- The clock was stopped, we're done
-		logger.dbg("Clock is stopped")
-		return
-	end
+function NanoClock:invalidateClockArea()
+	self.clock_area.x = 0
+	self.clock_area.y = 0
+	self.clock_area.w = math.huge
+	self.clock_area.h = math.huge
+end
 
-	-- We need to handle potential changes in the framebuffer format/layout...
+function NanoClock:handleFBInkReinit()
 	local reinit = FBInk.fbink_reinit(self.fbink_fd, self.fbink_cfg)
 	if reinit > 0 then
 		if bit.band(reinit, C.OK_BPP_CHANGE) then
 			logger.notice("Handled a framebuffer bitdepth change")
 		end
 
+		-- In case of rotation, our clock area is now meaningless,
+		-- so, make sure to invalidate it so we force a repaint at the "new" coordinates...
 		if bit.band(reinit, C.OK_LAYOUT_CHANGE) then
 			logger.notice("Handled a framebuffer orientation change")
+			self:invalidateClockArea()
 		elseif bit.band(reinit, C.OK_ROTA_CHANGE) then
 			logger.notice("Handled a framebuffer rotation change")
+			self:invalidateClockArea()
 		end
+	end
+end
+
+function NanoClock:displayClock()
+	if not self:prepareClock() then
+		-- The clock was stopped, we're done
+		logger.dbg("Clock is stopped")
+		return
 	end
 
 	-- Finally, do the thing ;).
@@ -569,6 +581,10 @@ function NanoClock:waitForEvent()
 								-- Otherwise, check that it is *not* our own damage event,
 								-- *and* that we previously *did* see ours...
 								if self.marker_found and damage.data.update_marker ~= self.clock_marker then
+									-- We need to handle potential changes in the framebuffer format/layout,
+									-- because that could mean that the clock area we remember may now be stale...
+									self:handleFBInkReinit()
+
 									-- Then, that it actually drew over our clock...
 									local update_area = Geom:new{
 										x = damage.data.update_region.left,
