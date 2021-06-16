@@ -50,8 +50,8 @@ local NanoClock = {
 	fl_brightness = "??",
 
 	-- I18N stuff
-	en_days = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" },
-	en_months = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" },
+	days_map = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" },
+	months_map = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" },
 }
 
 function NanoClock:die(msg)
@@ -221,8 +221,9 @@ function NanoClock:handleConfig()
 			table.insert(user_days, day)
 		end
 
+		local en_days = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" }
 		self.days_map = {}
-		for k, v in ipairs(self.en_days) do
+		for k, v in ipairs(en_days) do
 			self.days_map[k] = user_days[k] or v
 		end
 	end
@@ -233,8 +234,9 @@ function NanoClock:handleConfig()
 			table.insert(user_months, month)
 		end
 
+		local en_months = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" }
 		self.months_map = {}
-		for k, v in ipairs(self.en_months) do
+		for k, v in ipairs(en_months) do
 			self.months_map[k] = user_months[k] or v
 		end
 	end
@@ -369,18 +371,12 @@ end
 
 function NanoClock:getUserDay()
 	local k = tonumber(os.date("%u"))
-	if not self.days_map then
-		return self.en_days[k]
-	end
 
 	return self.days_map[k]
 end
 
 function NanoClock:getUserMonth()
 	local k = tonumber(os.date("%m"))
-	if not self.months_map then
-		return self.en_months[k]
-	end
 
 	return self.months_map[k]
 end
@@ -491,7 +487,8 @@ function NanoClock:displayClock()
 	-- Reset the damage tracker
 	self.marker_found = false
 
-	-- Remember our damage area (in the same potentially rotated state as the actual ioctls) to detect if we actually need to repaint...
+	-- Remember our damage area (in the same potentially rotated state as the actual ioctls),
+	-- to detect if we actually need to repaint...
 	local rect = FBInk.fbink_get_last_rect(true)
 	-- We might get an empty rectangle if the previous update failed,
 	-- and we *never* want to store an empty rectangle in self.damage_area,
