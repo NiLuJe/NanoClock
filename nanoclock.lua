@@ -508,7 +508,7 @@ function NanoClock:waitForEvent()
 				self:die(string.format("poll: %s", C.strerror(errno)))
 			end
 		elseif poll_num > 0 then
-			if bit.band(pfd.revents, C.POLLIN) then
+			if bit.band(pfd.revents, C.POLLIN) ~= 0 then
 				local overflowed = false
 
 				while true do
