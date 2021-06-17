@@ -218,6 +218,9 @@ function NanoClock:handleConfig()
 	if self.cfg.display.backgroundless ~= 0 then
 		self.fbink_cfg.is_bgless = true
 
+		-- No background means padding would achieve nothing.
+		self.cfg.display.truetype_padding = 0
+
 		-- Auto-refresh would lead to overlapping text
 		self.cfg.display.autorefresh = 0
 	else
@@ -225,6 +228,8 @@ function NanoClock:handleConfig()
 	end
 	if self.cfg.display.overlay ~= 0 then
 		self.fbink_cfg.is_overlay = true
+
+		self.cfg.display.truetype_padding = 0
 
 		self.cfg.display.autorefresh = 0
 	else
