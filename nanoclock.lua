@@ -43,8 +43,10 @@ local NanoClock = {
 	-- fds
 	fbink_fd = -1,
 	damage_fd = -1,
+	inotify_fd = -1,
 	clock_fd = -1,
-	pfds = ffi.new("struct pollfd[2]"),
+	pfds = ffi.new("struct pollfd[3]"),
+	inotify_wd = {},
 
 	-- State tracking
 	clock_marker = 0,
@@ -162,6 +164,29 @@ function NanoClock:endTimer()
 	-- Keep it set to a negative value to make poll ignore it
 	self.clock_fd = -1
 	self.pfds[1].fd = -1
+end
+
+function NanoClock:initInotify()
+	self.inotify_fd = C.inotify_init1(bit.bor(C.IN_NONBLOCK, C.IN_CLOEXEC))
+	if self.inotify_fd == -1 then
+		local errno = ffi.errno()
+		self:die(string.format("inotify_init1: %s", C.strerror(errno)))
+	end
+end
+
+function NanoClock:setupInotify()
+	if self.inotify_wd[self.config_path] and self.inotify_wd[self.config_path] ~= -1 then
+		return
+	end
+
+	self.inotify_wd[self.config_path] = C.inotify_add_watch(self.inotify_fd, self.config_path, C.IN_CLOSE_WRITE)
+	if self.inotify_wd[self.config_path] == -1 then
+		local errno = ffi.errno()
+		-- We allow ENOENT as it *will* happen when onboard is unmounted during an USBMS session!
+		if errno ~= C.ENOENT then
+			self:die(string.format("inotify_add_watch: %s", C.strerror(errno)))
+		end
+	end
 end
 
 function NanoClock:initConfig()
@@ -565,16 +590,23 @@ function NanoClock:displayClock()
 end
 
 function NanoClock:waitForEvent()
+	local buf = ffi.new("char[4096]")
 	local damage = ffi.new("mxcfb_damage_update")
 	local exp = ffi.new("uint64_t[1]")
 
 	self.pfds[0].fd = self.damage_fd
 	self.pfds[0].events = C.POLLIN
-	self.pfds[1].fd = self.clock_fd
+	self.pfds[1].fd = self.inotify_fd
 	self.pfds[1].events = C.POLLIN
+	self.pfds[2].fd = self.clock_fd
+	self.pfds[2].events = C.POLLIN
 
 	while true do
-		local poll_num = C.poll(self.pfds, 2, -1)
+		-- Try to watch the config file for changes (we need to check this on each iteration,
+		-- because an unmount destroys the inotify watch).
+		self:setupInotify()
+
+		local poll_num = C.poll(self.pfds, 3, -1)
 
 		if poll_num == -1 then
 			local errno = ffi.errno()
@@ -583,6 +615,70 @@ function NanoClock:waitForEvent()
 			end
 		elseif poll_num > 0 then
 			if bit.band(self.pfds[1].revents, C.POLLIN) ~= 0 then
+				while true do
+					local len = C.read(self.inotify_fd, buf, ffi.sizeof(buf))
+
+					if len < 0 then
+						local errno = ffi.errno()
+						if errno == C.EAGAIN then
+							-- Inotify kernel buffer drained, back to poll!
+							break
+						end
+
+						if errno ~= C.EINTR then
+							self:die(string.format("read: %s", C.strerror(errno)))
+						end
+					elseif len == 0 then
+						-- Should never happen
+						local errno = C.EPIPE
+						self:die(string.format("read: %s", C.strerror(errno)))
+					elseif len < ffi.sizeof("struct inotify_event") then
+						-- Should *also* never happen ;p.
+						local errno = C.EINVAL
+						self:die(string.format("read: %s", C.strerror(errno)))
+					else
+						local ptr = buf
+						while ptr < buf + len do
+							local event = ffi.cast("const struct inotify_event*", ptr)
+
+							-- NOTE: If we happened to watch multiple files,
+							--       this is where we'd match event.wd against out own mapping in self.inotify_wd
+							--       But we don't, so, always assume event.wd == self.inotify_wd[self.config_path]
+
+							if bit.band(event.mask, C.IN_CLOSE_WRITE) ~= 0 then
+								logger.dbg("Tripped IN_CLOSE_WRITE for wd %d (config's: %d)", event.wd, self.inotify_wd[self.config_path])
+
+								self:reloadConfig()
+							end
+
+							if bit.band(event.mask, C.IN_UNMOUNT) ~= 0 then
+								logger.dbg("Tripped IN_UNMOUNT for wd %d (config's: %d)", event.wd, self.inotify_wd[self.config_path])
+
+								-- Flag the wd as destroyed by the system
+								self.inotify_wd[self.config_path] = -1
+							end
+
+							if bit.band(event.mask, C.IN_IGNORE) ~= 0 then
+								logger.dbg("Tripped IN_IGNORE for wd %d (config's: %d)", event.wd, self.inotify_wd[self.config_path])
+
+								-- Flag the wd as destroyed by the system
+								self.inotify_wd[self.config_path] = -1
+							end
+
+							if bit.band(event.mask, C.IN_Q_OVERFLOW) ~= 0 then
+								logger.warn("Tripped IN_Q_OVERFLOW")
+
+								-- We only watch a single file, so, we don't really have anything to do, this just means we lost events.
+							end
+
+							-- Next event!
+							ptr = ptr + ffi.sizeof("struct inotify_event") + event.len
+						end
+					end
+				end
+			end
+
+			if bit.band(self.pfds[2].revents, C.POLLIN) ~= 0 then
 				-- We don't actually care about the expiration count, so just read to clear the event
 				C.read(self.clock_fd, exp, ffi.sizeof(exp[0]))
 
@@ -709,6 +805,7 @@ function NanoClock:main()
 	self:init()
 	self:initFBInk()
 	self:initDamage()
+	self:initInotify()
 	self:initConfig()
 	logger.info("Initialized NanoClock %s with FBInk %s", self.version, FBInk.fbink_version())
 
@@ -725,6 +822,9 @@ function NanoClock:fini()
 	FBInk.fbink_close(self.fbink_fd)
 	if self.damage_fd ~= -1 then
 		C.close(self.damage_fd)
+	end
+	if self.inotify_fd ~= -1 then
+		C.close(self.inotify_fd)
 	end
 	if self.clock_fd ~= -1 then
 		C.close(self.clock_fd)
