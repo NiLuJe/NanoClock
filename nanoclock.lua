@@ -696,6 +696,9 @@ function NanoClock:fini()
 	if self.damage_fd and self.damage_fd ~= -1 then
 		C.close(self.damage_fd)
 	end
+	if self.clock_fd and self.clock_fd ~= -1 then
+		C.close(self.clock_fd)
+	end
 	os.execute("rmmod mxc_epdc_fb_damage")
 	C.closelog()
 end
