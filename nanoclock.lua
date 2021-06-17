@@ -122,7 +122,11 @@ function NanoClock:initDamage()
 	end
 end
 
-function NanoClock:initTimer()
+function NanoClock:armTimer()
+	if self.clock_id ~= -1 then
+		return
+	end
+
 	self.clock_fd = C.timerfd_create(C.CLOCK_REALTIME, bit.bor(C.TFD_NONBLOCK, C.TFD_CLOEXEC))
 	if self.clock_fd == -1 then
 		local errno = ffi.errno()
@@ -143,6 +147,16 @@ function NanoClock:initTimer()
 		local errno = ffi.errno()
 		self:die(string.format("timerfd_settime: %s", C.strerror(errno)))
 	end
+end
+
+function NanoClock:endTimer()
+	if self.clock_id == -1 then
+		return
+	end
+
+	C.close(self.clock_fd)
+	-- Keep it set to a negative value to make poll ignore it
+	self.clock_fd = -1
 end
 
 function NanoClock:initConfig()
@@ -363,6 +377,13 @@ function NanoClock:handleConfig()
 
 	-- Some settings require an fbink_init to take...
 	FBInk.fbink_init(self.fbink_fd, self.fbink_cfg)
+
+	-- Toggle timerfd
+	if self.cfg.display.autorefresh ~= 0 then
+		self:armTimer()
+	else
+		self:endTimer()
+	end
 end
 
 function NanoClock:getFrontLightLevel()
@@ -558,10 +579,8 @@ function NanoClock:waitForEvent()
 			end
 		elseif poll_num > 0 then
 			if bit.band(pfds[1].revents, C.POLLIN) ~= 0 then
-				if self.cfg.display.autorefresh ~= 0 then
-					self:handleFBInkReinit()
-					self:displayClock()
-				end
+				self:handleFBInkReinit()
+				self:displayClock()
 
 				-- We don't actually care about the expiration count, so just read to clear the event
 				C.read(self.clock_fd, exp, ffi.sizeof(exp[0]))
@@ -686,7 +705,6 @@ function NanoClock:main()
 	self:init()
 	self:initFBInk()
 	self:initDamage()
-	self:initTimer()
 	self:initConfig()
 	logger.info("Initialized NanoClock %s with FBInk %s", self.version, FBInk.fbink_version())
 
