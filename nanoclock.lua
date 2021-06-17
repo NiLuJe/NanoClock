@@ -40,6 +40,11 @@ local NanoClock = {
 	config_file = "nanoclock.ini",
 	nickel_config = "/mnt/onboard/.kobo/Kobo/Kobo eReader.conf",
 
+	-- fds
+	fbink_fd = -1,
+	damage_fd = -1,
+	clock_fd = -1,
+
 	-- State tracking
 	clock_marker = 0,
 	marker_found = false,
@@ -695,13 +700,11 @@ function NanoClock:main()
 end
 
 function NanoClock:fini()
-	if self.fbink_fd then
-		FBInk.fbink_close(self.fbink_fd)
-	end
-	if self.damage_fd and self.damage_fd ~= -1 then
+	FBInk.fbink_close(self.fbink_fd)
+	if self.damage_fd ~= -1 then
 		C.close(self.damage_fd)
 	end
-	if self.clock_fd and self.clock_fd ~= -1 then
+	if self.clock_fd ~= -1 then
 		C.close(self.clock_fd)
 	end
 	os.execute("rmmod mxc_epdc_fb_damage")
