@@ -123,7 +123,7 @@ function NanoClock:initDamage()
 end
 
 function NanoClock:armTimer()
-	if self.clock_id ~= -1 then
+	if self.clock_fd ~= -1 then
 		return
 	end
 
@@ -150,7 +150,7 @@ function NanoClock:armTimer()
 end
 
 function NanoClock:endTimer()
-	if self.clock_id == -1 then
+	if self.clock_fd == -1 then
 		return
 	end
 
