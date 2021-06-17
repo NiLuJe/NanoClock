@@ -557,6 +557,16 @@ function NanoClock:waitForEvent()
 				self:die(string.format("poll: %s", C.strerror(errno)))
 			end
 		elseif poll_num > 0 then
+			if bit.band(pfds[1].revents, C.POLLIN) ~= 0 then
+				if self.cfg.display.autorefresh ~= 0 then
+					self:handleFBInkReinit()
+					self:displayClock()
+				end
+
+				-- We don't actually care about the expiration count, so just read to clear the event
+				C.read(self.clock_fd, exp, ffi.sizeof(exp[0]))
+			end
+
 			if bit.band(pfds[0].revents, C.POLLIN) ~= 0 then
 				local overflowed = false
 
@@ -667,16 +677,6 @@ function NanoClock:waitForEvent()
 						end
 					end
 				end
-			end
-
-			if bit.band(pfds[1].revents, C.POLLIN) ~= 0 then
-				if self.cfg.display.autorefresh ~= 0 then
-					self:handleFBInkReinit()
-					self:displayClock()
-				end
-
-				-- We don't actually care about the expiration count, so just read to clear the event
-				C.read(self.clock_fd, exp, ffi.sizeof(exp[0]))
 			end
 		end
 	end
