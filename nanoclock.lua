@@ -583,11 +583,11 @@ function NanoClock:waitForEvent()
 			end
 		elseif poll_num > 0 then
 			if bit.band(self.pfds[1].revents, C.POLLIN) ~= 0 then
-				self:handleFBInkReinit()
-				self:displayClock()
-
 				-- We don't actually care about the expiration count, so just read to clear the event
 				C.read(self.clock_fd, exp, ffi.sizeof(exp[0]))
+
+				self:handleFBInkReinit()
+				self:displayClock()
 			end
 
 			if bit.band(self.pfds[0].revents, C.POLLIN) ~= 0 then
