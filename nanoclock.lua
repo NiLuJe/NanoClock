@@ -44,6 +44,7 @@ local NanoClock = {
 	fbink_fd = -1,
 	damage_fd = -1,
 	clock_fd = -1,
+	pfds = ffi.new("struct pollfd[2]"),
 
 	-- State tracking
 	clock_marker = 0,
@@ -147,6 +148,9 @@ function NanoClock:armTimer()
 		local errno = ffi.errno()
 		self:die(string.format("timerfd_settime: %s", C.strerror(errno)))
 	end
+
+	-- And update the poll table
+	self.pfds[1].fd = self.clock_fd
 end
 
 function NanoClock:endTimer()
@@ -157,6 +161,7 @@ function NanoClock:endTimer()
 	C.close(self.clock_fd)
 	-- Keep it set to a negative value to make poll ignore it
 	self.clock_fd = -1
+	self.pfds[1].fd = -1
 end
 
 function NanoClock:initConfig()
@@ -563,14 +568,13 @@ function NanoClock:waitForEvent()
 	local damage = ffi.new("mxcfb_damage_update")
 	local exp = ffi.new("uint64_t[1]")
 
-	local pfds = ffi.new("struct pollfd[2]")
-	pfds[0].fd = self.damage_fd
-	pfds[0].events = C.POLLIN
-	pfds[1].fd = self.clock_fd
-	pfds[1].events = C.POLLIN
+	self.pfds[0].fd = self.damage_fd
+	self.pfds[0].events = C.POLLIN
+	self.pfds[1].fd = self.clock_fd
+	self.pfds[1].events = C.POLLIN
 
 	while true do
-		local poll_num = C.poll(pfds, 2, -1)
+		local poll_num = C.poll(self.pfds, 2, -1)
 
 		if poll_num == -1 then
 			local errno = ffi.errno()
@@ -578,7 +582,7 @@ function NanoClock:waitForEvent()
 				self:die(string.format("poll: %s", C.strerror(errno)))
 			end
 		elseif poll_num > 0 then
-			if bit.band(pfds[1].revents, C.POLLIN) ~= 0 then
+			if bit.band(self.pfds[1].revents, C.POLLIN) ~= 0 then
 				self:handleFBInkReinit()
 				self:displayClock()
 
@@ -586,7 +590,7 @@ function NanoClock:waitForEvent()
 				C.read(self.clock_fd, exp, ffi.sizeof(exp[0]))
 			end
 
-			if bit.band(pfds[0].revents, C.POLLIN) ~= 0 then
+			if bit.band(self.pfds[0].revents, C.POLLIN) ~= 0 then
 				local overflowed = false
 
 				while true do
