@@ -173,6 +173,10 @@ function NanoClock:initInotify()
 end
 
 function NanoClock:setupInotify()
+	-- We're called on each iteration right before poll, in order to recreate the wd after an unmount.
+	-- But in most cases, the wd will be alive and well, so, only proceed if:
+	-- * the watch was never actually created (e.g., first ever poll call)
+	-- * or it was destroyed by an unmount, in which case we try to recreate it
 	if self.inotify_wd[self.config_path] and self.inotify_wd[self.config_path] ~= -1 then
 		return
 	end
@@ -180,6 +184,7 @@ function NanoClock:setupInotify()
 	-- If a watch for that file was previously created, that means it's been destroyed by an unmount
 	local was_destroyed = false
 	if self.inotify_wd[self.config_path] then
+		-- Given the early return check, we know it's going to be set to -1, which is our "destroyed" marker.
 		was_destroyed = true
 	end
 
@@ -187,6 +192,8 @@ function NanoClock:setupInotify()
 	if self.inotify_wd[self.config_path] == -1 then
 		local errno = ffi.errno()
 		-- We allow ENOENT as it *will* happen when onboard is unmounted during an USBMS session!
+		-- (Granted, the only damage events we should catch during an USBMS session are ours,
+		-- and the only way that can happen is via timerfd ticks ;)).
 		if errno ~= C.ENOENT then
 			self:die(string.format("inotify_add_watch: %s", C.strerror(errno)))
 		end
