@@ -52,8 +52,6 @@ local NanoClock = {
 	clock_marker = 0,
 	marker_found = false,
 	clock_area = Geom:new{x = 0, y = 0, w = math.huge, h = math.huge},
-	config_mtime = 0,
-	print_failed = false,
 	nickel_mtime = 0,
 	fl_brightness = "??",
 
@@ -197,7 +195,6 @@ function NanoClock:initConfig()
 		-- and :init() that we've got a user config file in there...
 		self:die("Config file is missing, aborting!")
 	end
-	self.config_mtime = config_mtime
 
 	-- Start by loading the defaults...
 	self.defaults = INIFile.parse(self.defaults_path)
@@ -210,27 +207,15 @@ function NanoClock:initConfig()
 end
 
 function NanoClock:reloadConfig()
-	-- Reload the config if it was modified since the last time we parsed it...
-	local config_mtime = lfs.attributes(self.config_path, "modification")
-	if not config_mtime then
-		-- Can't find the config file, is onboard currently unmounted? (USBMS?)
-		-- In any case, nothing more to do here ;).
-		return false
-	end
-
-	if config_mtime == self.config_mtime then
-		-- No change, we're done
-		return false
-	else
-		self.config_mtime = config_mtime
-	end
-
 	logger.notice("Config file was modified, reloading it")
+	-- NOTE: We're only called on inotify events, so we *should* have a guarantee that the file actually exists...
 	self.cfg = INIFile.parse(self.config_path)
 	self:sanitizeConfig()
 	self:handleConfig()
 
-	return true
+	-- And force a clock refresh for good measure (and also to ease recovering from print failures stemming from config issues).
+	self:handleFBInkReinit()
+	self:displayClock()
 end
 
 function NanoClock:sanitizeConfig()
@@ -423,7 +408,7 @@ function NanoClock:getFrontLightLevel()
 		return tostring(brightness) .. "%"
 	else
 		-- Otherwise, we have to look inside Nickel's config...
-		-- Avoid parsing it again if it hasn't changed, like :reloadConfig()
+		-- Avoid parsing it again if it hasn't changed.
 		local nickel_mtime = lfs.attributes(self.nickel_config, "modification")
 		if not nickel_mtime then
 			return self.fl_brightness
@@ -481,9 +466,6 @@ local function expandPatterns(m)
 end
 
 function NanoClock:prepareClock()
-	-- Check if the config has been updated, and reload it if necessary...
-	self:reloadConfig()
-
 	-- If the clock was stopped, we're done.
 	if self.cfg.global.stop ~= 0 then
 		return false
@@ -563,9 +545,6 @@ function NanoClock:displayClock()
 		-- so always resetting the damage tracking makes sense.
 		-- We simply force a clock display when we successfully reload the config,
 		-- allowing the user to recover if the failure stems from a config snafu...
-		self.print_failed = true
-	else
-		self.print_failed = false
 	end
 
 	-- Remember our marker to be able to ignore its damage event, otherwise we'd be stuck in an infinite loop ;).
@@ -776,17 +755,6 @@ function NanoClock:waitForEvent()
 											ffi.cast("unsigned int", damage.data.update_marker),
 											ffi.cast("unsigned int", self.clock_marker),
 											tostring(self.marker_found))
-
-									-- Do attempt to recover from print failures, in case they stem from a config issue...
-									-- NOTE: This would be mildly less icky if we tracked config updates via inotify,
-									--       in which case we'd just have to stick a :displayClock() at the end of :reloadConfig() ;).
-									if self.print_failed then
-										if self:reloadConfig() then
-											logger.notice("Previous clock update failed, but config was modified since, trying again")
-											self:handleFBInkReinit()
-											self:displayClock()
-										end
-									end
 								end
 							end
 						else
