@@ -638,8 +638,8 @@ function NanoClock:waitForEvent()
 								self.inotify_wd[self.config_path] = -1
 							end
 
-							if bit.band(event.mask, C.IN_IGNORE) ~= 0 then
-								logger.dbg("Tripped IN_IGNORE for wd %d (config's: %d)", event.wd, self.inotify_wd[self.config_path])
+							if bit.band(event.mask, C.IN_IGNORED) ~= 0 then
+								logger.dbg("Tripped IN_IGNORED for wd %d (config's: %d)", event.wd, self.inotify_wd[self.config_path])
 
 								-- Flag the wd as destroyed by the system
 								self.inotify_wd[self.config_path] = -1
