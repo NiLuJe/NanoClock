@@ -626,20 +626,26 @@ function NanoClock:waitForEvent()
 							--       But we don't, so, always assume event.wd == self.inotify_wd[self.config_path]
 
 							if bit.band(event.mask, C.IN_CLOSE_WRITE) ~= 0 then
-								logger.dbg("Tripped IN_CLOSE_WRITE for wd %d (config's: %d)", event.wd, self.inotify_wd[self.config_path])
+								logger.dbg("Tripped IN_CLOSE_WRITE for wd %d (config's: %d)",
+								           ffi.cast("int", event.wd),
+								           ffi.cast("int", self.inotify_wd[self.config_path]))
 
 								self:reloadConfig()
 							end
 
 							if bit.band(event.mask, C.IN_UNMOUNT) ~= 0 then
-								logger.dbg("Tripped IN_UNMOUNT for wd %d (config's: %d)", event.wd, self.inotify_wd[self.config_path])
+								logger.dbg("Tripped IN_UNMOUNT for wd %d (config's: %d)",
+								           ffi.cast("int", event.wd),
+								           ffi.cast("int", self.inotify_wd[self.config_path]))
 
 								-- Flag the wd as destroyed by the system
 								self.inotify_wd[self.config_path] = -1
 							end
 
 							if bit.band(event.mask, C.IN_IGNORED) ~= 0 then
-								logger.dbg("Tripped IN_IGNORED for wd %d (config's: %d)", event.wd, self.inotify_wd[self.config_path])
+								logger.dbg("Tripped IN_IGNORED for wd %d (config's: %d)",
+								           ffi.cast("int", event.wd),
+								           ffi.cast("int", self.inotify_wd[self.config_path]))
 
 								-- Flag the wd as destroyed by the system
 								self.inotify_wd[self.config_path] = -1
