@@ -162,6 +162,8 @@ static const int IN_IGNORED = 32768;
 static const int IN_ISDIR = 1073741824;
 static const int IN_Q_OVERFLOW = 16384;
 static const int IN_UNMOUNT = 8192;
+static const int IN_NONBLOCK = 2048;
+static const int IN_CLOEXEC = 524288;
 int inotify_init1(int) __attribute__((nothrow, leaf));
 int inotify_add_watch(int, const char *, uint32_t) __attribute__((nothrow, leaf));
 int inotify_rm_watch(int, int) __attribute__((nothrow, leaf));
