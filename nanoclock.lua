@@ -150,7 +150,7 @@ function NanoClock:armTimer()
 	end
 
 	-- And update the poll table
-	self.pfds[1].fd = self.clock_fd
+	self.pfds[2].fd = self.clock_fd
 end
 
 function NanoClock:endTimer()
@@ -161,7 +161,7 @@ function NanoClock:endTimer()
 	C.close(self.clock_fd)
 	-- Keep it set to a negative value to make poll ignore it
 	self.clock_fd = -1
-	self.pfds[1].fd = -1
+	self.pfds[2].fd = -1
 end
 
 function NanoClock:initInotify()
