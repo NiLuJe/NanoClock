@@ -213,7 +213,8 @@ function NanoClock:reloadConfig()
 	self:sanitizeConfig()
 	self:handleConfig()
 
-	-- And force a clock refresh for good measure (and also to ease recovering from print failures stemming from config issues).
+	-- Force a clock refresh for good measure,
+	-- (and also to ease recovering from print failures stemming from config issues).
 	self:handleFBInkReinit()
 	self:displayClock()
 end
