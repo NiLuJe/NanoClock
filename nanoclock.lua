@@ -177,12 +177,24 @@ function NanoClock:setupInotify()
 		return
 	end
 
+	-- If a watch for that file was previously created, that means it's been destroyed by an unmount
+	local was_destroyed = false
+	if self.inotify_wd[self.config_path] then
+		was_destroyed = true
+	end
+
 	self.inotify_wd[self.config_path] = C.inotify_add_watch(self.inotify_fd, self.config_path, C.IN_CLOSE_WRITE)
 	if self.inotify_wd[self.config_path] == -1 then
 		local errno = ffi.errno()
 		-- We allow ENOENT as it *will* happen when onboard is unmounted during an USBMS session!
 		if errno ~= C.ENOENT then
 			self:die(string.format("inotify_add_watch: %s", C.strerror(errno)))
+		end
+	else
+		-- If we've just recreated the watch after an unmount/remount cycle, force a config reload,
+		-- as it may have been updated outside of our oversight (e.g., USBMS)...
+		if was_destroyed then
+			self:reloadConfig()
 		end
 	end
 end
