@@ -538,6 +538,8 @@ function NanoClock:invalidateClockArea()
 
 	logger.dbg("Invalidated clock area")
 	-- We also need to invalidate last_rect, so that grabClockBackground doesn't grab stale coordinates.
+	-- Much like the clock_area above, this'll ensure the first dump will be full-screen,
+	-- just to be safe...
 	self.fbink_last_rect = nil
 end
 
