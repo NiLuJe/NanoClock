@@ -546,16 +546,6 @@ function NanoClock:grabClockBackground()
 		return
 	end
 
-	-- We'd need the *unrotated* clock area to be able to handle quirky landscapes...
-	-- As this should not happen outside of the boot anim on current FW versions,
-	-- just forget about it...
-	-- FIXME: Err, do we, actually?
-	--[[
-	if self.fbink_state.is_ntx_quirky_landscape then
-		return
-	end
-	--]]
-
 	logger.dbg("Grabbing clock bg")
 	FBInk.fbink_rect_dump(self.fbink_fd, self.fbink_last_rect, self.fbink_dump)
 
@@ -570,12 +560,6 @@ function NanoClock:restoreClockBackground()
 	if not self.overlap_trick then
 		return
 	end
-
-	--[[
-	if self.fbink_state.is_ntx_quirky_landscape then
-		return
-	end
-	--]]
 
 	logger.dbg("Restoring clock bg")
 	-- NOTE: FBInk will complain if we restore without a dump first (harmless)
