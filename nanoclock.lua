@@ -258,14 +258,10 @@ end
 
 -- C's good old !! trick ;)
 local function coerceToBool(val)
-	if type(val) == "boolean" then
-		return val
+	if val == true or val == 1 or val == "1" then
+		return true
 	else
-		if val == 1 or val == "1" then
-			return true
-		else
-			return false
-		end
+		return false
 	end
 end
 
