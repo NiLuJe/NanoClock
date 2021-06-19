@@ -688,11 +688,9 @@ function NanoClock:waitForEvent()
 								           ffi.cast("int", event.wd),
 								           ffi.cast("int", self.inotify_wd[self.config_path]))
 
-								-- Blank the previous clock area to avoid overlapping displays
-								if self.fbink_last_rect then
-									-- We have to keep the refresh, as the clock may have moved
-									FBInk.fbink_cls(self.fbink_fd, self.fbink_cfg, self.fbink_last_rect, self.fbink_state.is_ntx_quirky_landscape)
-								end
+								-- Blank the previous clock area to avoid overlapping displays.
+								-- We can't optimize the refresh out, as the clock may have moved...
+								FBInk.fbink_cls(self.fbink_fd, self.fbink_cfg, self.fbink_last_rect, self.fbink_state.is_ntx_quirky_landscape)
 
 								self:reloadConfig()
 							end
@@ -733,7 +731,11 @@ function NanoClock:waitForEvent()
 				C.read(self.clock_fd, exp, ffi.sizeof(exp[0]))
 
 				self:handleFBInkReinit()
+
+				-- If the config requires it, this will restore the previous, pristine clock background.
+				-- This avoids overlapping text with display modes that skip background pixels.
 				self:restoreClockBackground()
+
 				self:displayClock()
 			end
 
@@ -817,7 +819,10 @@ function NanoClock:waitForEvent()
 											self.fbink_cfg.is_nightmode = false
 										end
 
+										-- If the config requires it, this will grab the pristine clock background,
+										-- to be used for autorefresh & backgroundless trickery ;).
 										self:grabClockBackground()
+
 										self:displayClock()
 									else
 										logger.dbg("No clock update necessary: damage rectangle %s does not intersect with the clock's %s",
