@@ -48,10 +48,11 @@ function inifile.parse(path)
 
 		-- Key-value pairs
 		local key, value = line:match("^([%w_]+)%s-=%s-(.+)$")
-		if tonumber(value) then value = tonumber(value) end
-		if value:lower() == "true" then value = true end
-		if value:lower() == "false" then value = false end
-		if key and value ~= nil then
+		if key ~= nil and value ~= nil then
+			if tonumber(value) then value = tonumber(value) end
+			if value:lower() == "true" then value = true end
+			if value:lower() == "false" then value = false end
+
 			t[section][key] = value
 		end
 	end
