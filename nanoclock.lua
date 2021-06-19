@@ -557,23 +557,7 @@ function NanoClock:grabClockBackground()
 	--]]
 
 	logger.dbg("Grabbing clock bg")
-	-- NOTE: Move that to state update
-	local koboVertOffset = self.fbink_state.view_vert_origin - self.fbink_state.view_vert_offset
-	-- NOTE: Disable internal positioning trickery by temporarily resetting to row & col 0,
-	--       and just correcting for the potential viewport offset...
-	--       A bit clunky and weird if you don't happen to have written said positioning spaghetti, but it works :).
-	--       Might be time for new region_dump API that just take a rect as-is, though (e.g., fbink_dump_rect).
-	self.fbink_cfg.col = 0
-	self.fbink_cfg.row = 0
-	FBInk.fbink_region_dump(self.fbink_fd,
-	                        self.clock_area.x,
-	                        self.clock_area.y - koboVertOffset,
-	                        self.clock_area.w,
-	                        self.clock_area.h + koboVertOffset,
-	                        self.fbink_cfg,
-	                        self.fbink_dump)
-	self.fbink_cfg.col = self.cfg.display.column
-	self.fbink_cfg.row = self.cfg.display.row
+	FBInk.fbink_rect_dump(self.fbink_fd, self.fbink_last_rect, self.fbink_dump)
 
 	logger.dbg("Dump: %hux%hu+%hu+%hu",
 	           ffi.cast("unsigned short int", self.fbink_dump.area.width),
