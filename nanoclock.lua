@@ -114,6 +114,9 @@ function NanoClock:initFBInk()
 	-- We may need to do some device-specific stuff down the line...
 	FBInk.fbink_get_state(self.fbink_cfg, self.fbink_state)
 	self.device_platform = ffi.string(self.fbink_state.device_platform)
+
+	-- So far, this has held across the full lineup
+	self.battery_sysfs = "/sys/devices/platform/pmic_battery.1/power_supply/mc13892_bat/capacity"
 end
 
 function NanoClock:initDamage()
@@ -451,7 +454,7 @@ function NanoClock:getFrontLightLevel()
 end
 
 function NanoClock:getBatteryLevel()
-	local gauge = util.readFileAsNumber(self.cfg.display.battery_source)
+	local gauge = util.readFileAsNumber(self.battery_sysfs)
 	if gauge >= self.cfg.display.battery_min and gauge <= self.cfg.display.battery_max then
 		return tostring(gauge) .. "%"
 	else
