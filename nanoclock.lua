@@ -256,9 +256,31 @@ function NanoClock:sanitizeConfig()
 	end
 end
 
+-- C's good old !! trick ;)
+local function coerceToBool(val)
+	if type(val) == "boolean" then
+		return val
+	else
+		if val == 1 or val == "1" then
+			return true
+		else
+			return false
+		end
+	end
+end
+
 function NanoClock:handleConfig()
+	-- Coerce various settings to true boolean values to handle older configs...
+	self.cfg.global.uninstall = coerceToBool(self.cfg.global.uninstall)
+	self.cfg.global.stop = coerceToBool(self.cfg.global.stop)
+	self.cfg.global.debug = coerceToBool(self.cfg.global.debug)
+	self.cfg.display.autorefresh = coerceToBool(self.cfg.display.autorefresh)
+	self.cfg.display.truetype_padding = coerceToBool(self.cfg.display.truetype_padding)
+	self.cfg.display.backgroundless = coerceToBool(self.cfg.display.backgroundless)
+	self.cfg.display.overlay = coerceToBool(self.cfg.display.overlay)
+
 	-- Was an uninstall requested?
-	if self.cfg.global.uninstall ~= 0 then
+	if self.cfg.global.uninstall then
 		os.rename(self.config_path, self.addon_folder .. "/uninstalled-" .. os.date("%Y%m%d-%H%M") .. ".ini")
 		os.remove("/etc/udev/rules.d/99-nanoclock.rules")
 		os.execute("rm -rf /usr/local/NanoClock")
@@ -266,19 +288,19 @@ function NanoClock:handleConfig()
 	end
 
 	-- Was debug logging requested?
-	if self.cfg.global.debug == 0 then
-		logger:setLevel(logger.levels.info)
-	else
+	if self.cfg.global.debug then
 		logger:setLevel(logger.levels.dbg)
+	else
+		logger:setLevel(logger.levels.info)
 	end
 
 	-- Massage various settings into a usable form
-	if self.cfg.display.backgroundless ~= 0 then
+	if self.cfg.display.backgroundless then
 		self.fbink_cfg.is_bgless = true
 	else
 		self.fbink_cfg.is_bgless = false
 	end
-	if self.cfg.display.overlay ~= 0 then
+	if self.cfg.display.overlay then
 		self.fbink_cfg.is_overlay = true
 	else
 		self.fbink_cfg.is_overlay = false
@@ -286,7 +308,7 @@ function NanoClock:handleConfig()
 
 	-- If autorefresh is enabled in conjunction with a "no background" drawing mode,
 	-- we'll need to resort to some trickery to avoid overlapping prints...
-	if self.cfg.display.autorefresh ~= 0 and (self.cfg.display.backgroundless ~= 0 or self.cfg.display.overlay ~= 0) then
+	if self.cfg.display.autorefresh and (self.cfg.display.backgroundless or self.cfg.display.overlay) then
 		self.overlap_trick = true
 	else
 		self.overlap_trick = false
@@ -295,7 +317,7 @@ function NanoClock:handleConfig()
 	if self.cfg.display.truetype_format == nil then
 		self.cfg.display.truetype_format = self.cfg.display.format
 	end
-	if self.cfg.display.truetype_padding ~= 0 then
+	if self.cfg.display.truetype_padding then
 		self.cfg.display.truetype_format = " " .. self.cfg.display.truetype_format .. " "
 	end
 
@@ -416,7 +438,7 @@ function NanoClock:handleConfig()
 	FBInk.fbink_init(self.fbink_fd, self.fbink_cfg)
 
 	-- Toggle timerfd
-	if self.cfg.display.autorefresh ~= 0 then
+	if self.cfg.display.autorefresh then
 		self:armTimer()
 	else
 		self:disarmTimer()
@@ -489,7 +511,7 @@ end
 
 function NanoClock:prepareClock()
 	-- If the clock was stopped, we're done.
-	if self.cfg.global.stop ~= 0 then
+	if self.cfg.global.stop then
 		return false
 	end
 
