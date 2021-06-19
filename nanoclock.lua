@@ -157,7 +157,7 @@ function NanoClock:armTimer()
 	self.pfds[2].fd = self.clock_fd
 end
 
-function NanoClock:endTimer()
+function NanoClock:disarmTimer()
 	if self.clock_fd == -1 then
 		return
 	end
@@ -419,7 +419,7 @@ function NanoClock:handleConfig()
 	if self.cfg.display.autorefresh ~= 0 then
 		self:armTimer()
 	else
-		self:endTimer()
+		self:disarmTimer()
 	end
 end
 
@@ -548,10 +548,13 @@ function NanoClock:grabClockBackground()
 
 	-- We'd need the *unrotated* clock area to be able to handle quirky landscapes...
 	-- As this should not happen outside of the boot anim on current FW versions,
-	-- just  forget about it...
+	-- just forget about it...
+	-- FIXME: Err, do we, actually?
+	--[[
 	if self.fbink_state.is_ntx_quirky_landscape then
 		return
 	end
+	--]]
 
 	logger.dbg("Grabbing clock bg")
 	-- NOTE: Move that to state update
@@ -584,9 +587,11 @@ function NanoClock:restoreClockBackground()
 		return
 	end
 
+	--[[
 	if self.fbink_state.is_ntx_quirky_landscape then
 		return
 	end
+	--]]
 
 	logger.dbg("Restoring clock bg")
 	-- NOTE: FBInk will complain if we restore without a dump first (harmless)
