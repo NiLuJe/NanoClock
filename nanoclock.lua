@@ -680,6 +680,7 @@ function NanoClock:waitForEvent()
 
 								-- Blank the previous clock area to avoid overlapping displays
 								if self.fbink_last_rect then
+									-- We have to keep the refresh, as the clock may have moved
 									FBInk.fbink_cls(self.fbink_fd, self.fbink_cfg, self.fbink_last_rect, self.fbink_state.is_ntx_quirky_landscape)
 								end
 
