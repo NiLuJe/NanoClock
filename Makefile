@@ -127,7 +127,7 @@ fbink.built: | outdir
 	cd FBInk && \
 	$(MAKE) clean
 	cd FBInk && \
-	$(MAKE) release KOBO=true MINIMAL=true FONTS=true OPENTYPE=true
+	$(MAKE) release KOBO=true MINIMAL=true FONTS=true OPENTYPE=true IMAGE=true
 	cp -av FBInk/Release/libfbink.so.1.0.0 $(OUT_DIR)/libfbink.so.1.0.0
 
 	touch fbink.built

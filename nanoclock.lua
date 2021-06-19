@@ -95,10 +95,11 @@ function NanoClock:initFBInk()
 	self.fbink_cfg = ffi.new("FBInkConfig")
 	self.fbink_ot = ffi.new("FBInkOTConfig")
 	self.fbink_state = ffi.new("FBInkState")
+	self.fbink_dump = ffi.new("FBInkDump")
 
 	-- Enable logging to syslog ASAP
-	self.fbink_cfg.is_verbose = false
-	self.fbink_cfg.is_quiet = true
+	self.fbink_cfg.is_verbose = true
+	self.fbink_cfg.is_quiet = false
 	self.fbink_cfg.to_syslog = true
 	FBInk.fbink_update_verbosity(self.fbink_cfg)
 
@@ -274,23 +275,21 @@ function NanoClock:handleConfig()
 	-- Massage various settings into a usable form
 	if self.cfg.display.backgroundless ~= 0 then
 		self.fbink_cfg.is_bgless = true
-
-		-- No background means padding would achieve nothing.
-		self.cfg.display.truetype_padding = 0
-
-		-- Auto-refresh would lead to overlapping text
-		self.cfg.display.autorefresh = 0
 	else
 		self.fbink_cfg.is_bgless = false
 	end
 	if self.cfg.display.overlay ~= 0 then
 		self.fbink_cfg.is_overlay = true
-
-		self.cfg.display.truetype_padding = 0
-
-		self.cfg.display.autorefresh = 0
 	else
 		self.fbink_cfg.is_overlay = false
+	end
+
+	-- If autorefresh is enabled in conjunction with a "no background" drawing mode,
+	-- we'll need to resort to some trickery to avoid overlapping prints...
+	if self.cfg.display.autorefresh ~= 0 and (self.cfg.display.backgroundless ~= 0 or self.cfg.display.overlay ~= 0) then
+		self.overlap_trick = true
+	else
+		self.overlap_trick = false
 	end
 
 	if self.cfg.display.truetype_format == nil then
@@ -542,6 +541,65 @@ function NanoClock:handleFBInkReinit()
 	end
 end
 
+function NanoClock:grabClockBackground()
+	if not self.overlap_trick then
+		return
+	end
+
+	-- We'd need the *unrotated* clock area to be able to handle quirky landscapes...
+	-- As this should not happen outside of the boot anim on current FW versions,
+	-- just  forget about it...
+	if self.fbink_state.is_ntx_quirky_landscape then
+		return
+	end
+
+	logger.dbg("Grabbing clock bg")
+	--[[
+	FBInk.fbink_region_dump(self.fbink_fd,
+	                        self.cfg.display.offset_x, self.cfg.display.offset_y, self.clock_area.w, self.clock_area.h,
+	                        self.fbink_cfg, self.fbink_dump)
+	--]]
+	-- NOTE: Move that to state update
+	local koboVertOffset = self.fbink_state.view_vert_origin - self.fbink_state.view_vert_offset
+	self.fbink_cfg.col = 0
+	self.fbink_cfg.row = 0
+	FBInk.fbink_region_dump(self.fbink_fd,
+	                        self.clock_area.x,
+	                        self.clock_area.y - koboVertOffset,
+	                        self.clock_area.w,
+	                        self.clock_area.h + koboVertOffset,
+	                        self.fbink_cfg,
+	                        self.fbink_dump)
+	self.fbink_cfg.col = self.cfg.display.column
+	self.fbink_cfg.row = self.cfg.display.row
+
+	-- NOTE: That works mostly okay for the fixed-cell codepath,
+	--       but we need new tricks to handle free TTF position....
+	--       Possibly a new region_dump API that just take a rect as-is? (ditto for print raw, maybe?)
+	--       fbink_dump_rect ;).
+	logger.dbg("Dump: %hux%hu+%hu+%hu",
+	           ffi.cast("unsigned short int", self.fbink_dump.area.width),
+	           ffi.cast("unsigned short int", self.fbink_dump.area.height),
+	           ffi.cast("unsigned short int", self.fbink_dump.area.left),
+	           ffi.cast("unsigned short int", self.fbink_dump.area.top))
+end
+
+function NanoClock:restoreClockBackground()
+	if not self.overlap_trick then
+		return
+	end
+
+	if self.fbink_state.is_ntx_quirky_landscape then
+		return
+	end
+
+	logger.dbg("Restoring clock bg")
+	-- NOTE: FBInk will complain if we restore without a dump first (harmless)
+	self.fbink_cfg.no_refresh = true
+	FBInk.fbink_restore(self.fbink_fd, self.fbink_cfg, self.fbink_dump)
+	self.fbink_cfg.no_refresh = false
+end
+
 function NanoClock:displayClock()
 	if not self:prepareClock() then
 		-- The clock was stopped, we're done
@@ -691,6 +749,7 @@ function NanoClock:waitForEvent()
 				C.read(self.clock_fd, exp, ffi.sizeof(exp[0]))
 
 				self:handleFBInkReinit()
+				self:restoreClockBackground()
 				self:displayClock()
 			end
 
@@ -774,6 +833,7 @@ function NanoClock:waitForEvent()
 											self.fbink_cfg.is_nightmode = false
 										end
 
+										self:grabClockBackground()
 										self:displayClock()
 									else
 										logger.dbg("No clock update necessary: damage rectangle %s does not intersect with the clock's %s",
@@ -816,6 +876,9 @@ function NanoClock:main()
 end
 
 function NanoClock:fini()
+	if self.fbink_dump.data ~= nil then
+		FBInk.fbink_free_dump_data(self.fbink_dump)
+	end
 	FBInk.fbink_close(self.fbink_fd)
 	if self.damage_fd ~= -1 then
 		C.close(self.damage_fd)
