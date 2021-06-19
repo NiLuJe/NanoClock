@@ -554,13 +554,12 @@ function NanoClock:grabClockBackground()
 	end
 
 	logger.dbg("Grabbing clock bg")
-	--[[
-	FBInk.fbink_region_dump(self.fbink_fd,
-	                        self.cfg.display.offset_x, self.cfg.display.offset_y, self.clock_area.w, self.clock_area.h,
-	                        self.fbink_cfg, self.fbink_dump)
-	--]]
 	-- NOTE: Move that to state update
 	local koboVertOffset = self.fbink_state.view_vert_origin - self.fbink_state.view_vert_offset
+	-- NOTE: Disable internal positioning trickery by temporarily resetting to row & col 0,
+	--       and just correcting for the potential viewport offset...
+	--       A bit clunky and weird if you don't happen to have written said positioning spaghetti, but it works :).
+	--       Might be time for new region_dump API that just take a rect as-is, though (e.g., fbink_dump_rect).
 	self.fbink_cfg.col = 0
 	self.fbink_cfg.row = 0
 	FBInk.fbink_region_dump(self.fbink_fd,
@@ -573,10 +572,6 @@ function NanoClock:grabClockBackground()
 	self.fbink_cfg.col = self.cfg.display.column
 	self.fbink_cfg.row = self.cfg.display.row
 
-	-- NOTE: That works mostly okay for the fixed-cell codepath,
-	--       but we need new tricks to handle free TTF position....
-	--       Possibly a new region_dump API that just take a rect as-is? (ditto for print raw, maybe?)
-	--       fbink_dump_rect ;).
 	logger.dbg("Dump: %hux%hu+%hu+%hu",
 	           ffi.cast("unsigned short int", self.fbink_dump.area.width),
 	           ffi.cast("unsigned short int", self.fbink_dump.area.height),
