@@ -571,11 +571,15 @@ function NanoClock:grabClockBackground()
 	end
 
 	logger.dbg("Grabbing clock bg")
-	logger.dbg("Last rect: %hux%hu+%hu+%hu",
-	           ffi.cast("unsigned short int", self.fbink_last_rect.width),
-	           ffi.cast("unsigned short int", self.fbink_last_rect.height),
-	           ffi.cast("unsigned short int", self.fbink_last_rect.left),
-	           ffi.cast("unsigned short int", self.fbink_last_rect.top))
+	if self.fbink_last_rect then
+		logger.dbg("Last rect: %hux%hu+%hu+%hu",
+			ffi.cast("unsigned short int", self.fbink_last_rect.width),
+			ffi.cast("unsigned short int", self.fbink_last_rect.height),
+			ffi.cast("unsigned short int", self.fbink_last_rect.left),
+			ffi.cast("unsigned short int", self.fbink_last_rect.top))
+	else
+		logger.dbg("Last rect is NULL")
+	end
 	local ret = FBInk.fbink_rect_dump(self.fbink_fd, self.fbink_last_rect, self.fbink_dump)
 	if ret ~= 0 then
 		if self.fbink_last_rect then
@@ -611,11 +615,15 @@ function NanoClock:restoreClockBackground()
 	           ffi.cast("unsigned short int", self.fbink_dump.area.height),
 	           ffi.cast("unsigned short int", self.fbink_dump.area.left),
 	           ffi.cast("unsigned short int", self.fbink_dump.area.top))
-	logger.dbg("Last rect: %hux%hu+%hu+%hu",
-	           ffi.cast("unsigned short int", self.fbink_last_rect.width),
-	           ffi.cast("unsigned short int", self.fbink_last_rect.height),
-	           ffi.cast("unsigned short int", self.fbink_last_rect.left),
-	           ffi.cast("unsigned short int", self.fbink_last_rect.top))
+	if self.fbink_last_rect then
+		logger.dbg("Last rect: %hux%hu+%hu+%hu",
+			ffi.cast("unsigned short int", self.fbink_last_rect.width),
+			ffi.cast("unsigned short int", self.fbink_last_rect.height),
+			ffi.cast("unsigned short int", self.fbink_last_rect.left),
+			ffi.cast("unsigned short int", self.fbink_last_rect.top))
+	else
+		logger.dbg("Last rect is NULL")
+	end
 	logger.dbg("Dump rota: %u vs. state rota: %u",
 	           ffi.cast("unsigned int", self.fbink_dump.rota),
 	           ffi.cast("unsigned int", self.fbink_state.current_rota))
