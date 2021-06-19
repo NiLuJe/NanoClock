@@ -637,15 +637,15 @@ function NanoClock:displayClock()
 
 	-- Remember our damage area (if necessary, in the same quirky rotated state as the actual ioctls),
 	-- to detect if we actually need to repaint...
-	local rect = FBInk.fbink_get_last_rect(self.fbink_state.is_ntx_quirky_landscape)
+	self.fbink_last_rect = FBInk.fbink_get_last_rect(self.fbink_state.is_ntx_quirky_landscape)
 	-- We might get an empty rectangle if the previous update failed,
 	-- and we *never* want to store an empty rectangle in self.damage_area,
 	-- because nothing can ever intersect with it, which breaks the area check ;).
-	if rect.width > 0 and rect.height > 0 then
-		self.clock_area.x = rect.left
-		self.clock_area.y = rect.top
-		self.clock_area.w = rect.width
-		self.clock_area.h = rect.height
+	if self.fbink_last_rect.width > 0 and self.fbink_last_rect.height > 0 then
+		self.clock_area.x = self.fbink_last_rect.left
+		self.clock_area.y = self.fbink_last_rect.top
+		self.clock_area.w = self.fbink_last_rect.width
+		self.clock_area.h = self.fbink_last_rect.height
 	end
 end
 
@@ -709,6 +709,11 @@ function NanoClock:waitForEvent()
 								logger.dbg("Tripped IN_CLOSE_WRITE for wd %d (config's: %d)",
 								           ffi.cast("int", event.wd),
 								           ffi.cast("int", self.inotify_wd[self.config_path]))
+
+								-- Blank the previous clock area to avoid overlapping displays
+								if self.fbink_last_rect then
+									FBInk.fbink_cls(self.fbink_fd, self.fbink_cfg, self.fbink_last_rect, self.fbink_state.is_ntx_quirky_landscape)
+								end
 
 								self:reloadConfig()
 							end
