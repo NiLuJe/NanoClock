@@ -653,6 +653,7 @@ function NanoClock:waitForEvent()
 			end
 		elseif poll_num > 0 then
 			if bit.band(self.pfds[1].revents, C.POLLIN) ~= 0 then
+				local removed = false
 				while true do
 					local len = C.read(self.inotify_fd, buf, ffi.sizeof(buf))
 
@@ -711,6 +712,7 @@ function NanoClock:waitForEvent()
 
 								-- Flag the wd as destroyed by the system
 								self.inotify_wd[self.config_path] = -1
+								removed = true
 							end
 
 							if bit.band(event.mask, C.IN_Q_OVERFLOW) ~= 0 then
@@ -723,6 +725,13 @@ function NanoClock:waitForEvent()
 							ptr = ptr + ffi.sizeof("struct inotify_event") + event.len
 						end
 					end
+				end
+
+				-- In case the file was simply removed (e.g., by cp), try to re-create the watch immediately.
+				if removed then
+					-- Wait 150ms, because I/O...
+					C.usleep(150 * 1000)
+					self:setupInotify()
 				end
 			end
 
