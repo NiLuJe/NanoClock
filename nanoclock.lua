@@ -258,10 +258,10 @@ end
 
 -- C's good old !! trick ;)
 local function coerceToBool(val)
-	if val == true or val == 1 or val == "1" then
-		return true
-	else
+	if val == false or val == 0 or val == "0" or val == "" or val == nil then
 		return false
+	else
+		return true
 	end
 end
 
