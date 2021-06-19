@@ -588,6 +588,9 @@ function NanoClock:grabClockBackground()
 		else
 			logger.warn("Failed to dump empty rect (%s)", C.strerror(-ret))
 		end
+
+		-- Free the stale dump data, just in case...
+		FBInk.fbink_free_dump_data(self.fbink_dump)
 	end
 	logger.dbg("Dump: %hux%hu+%hu+%hu",
 	           ffi.cast("unsigned short int", self.fbink_dump.area.width),
