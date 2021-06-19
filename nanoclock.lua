@@ -727,7 +727,7 @@ function NanoClock:waitForEvent()
 					end
 				end
 
-				-- In case the file was simply removed (e.g., by cp), try to re-create the watch immediately.
+				-- In case the file was simply temporarily removed (e.g., by cp), try to re-create the watch immediately.
 				if removed then
 					-- Wait 150ms, because I/O...
 					C.usleep(150 * 1000)
