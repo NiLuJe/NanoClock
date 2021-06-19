@@ -546,7 +546,6 @@ function NanoClock:grabClockBackground()
 		return
 	end
 
-	logger.dbg("Grabbing clock bg")
 	FBInk.fbink_rect_dump(self.fbink_fd, self.fbink_last_rect, self.fbink_dump)
 end
 
@@ -555,8 +554,7 @@ function NanoClock:restoreClockBackground()
 		return
 	end
 
-	logger.dbg("Restoring clock bg")
-	-- NOTE: FBInk will (harmlessly) complain if we restore without a dump first
+	-- NOTE: FBInk will (harmlessly) complain if we attempt a restore without a dump first (EINVAL).
 	self.fbink_cfg.no_refresh = true
 	FBInk.fbink_restore(self.fbink_fd, self.fbink_cfg, self.fbink_dump)
 	self.fbink_cfg.no_refresh = false
@@ -844,9 +842,8 @@ function NanoClock:main()
 end
 
 function NanoClock:fini()
-	if self.fbink_dump.data ~= nil then
-		FBInk.fbink_free_dump_data(self.fbink_dump)
-	end
+	-- NOTE: Safe to call with no actual dump to free (EINVAL)
+	FBInk.fbink_free_dump_data(self.fbink_dump)
 	FBInk.fbink_close(self.fbink_fd)
 	if self.damage_fd ~= -1 then
 		C.close(self.damage_fd)
