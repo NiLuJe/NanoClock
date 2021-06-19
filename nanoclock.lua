@@ -537,10 +537,8 @@ function NanoClock:invalidateClockArea()
 	self.clock_area.h = math.huge
 
 	logger.dbg("Invalidated clock area")
-	-- We also need to invalidate last_rect, so that grabClockBackground doesn't dump completely bogus data...
-	-- Which could be fatal in case of a layout change, as the rect would describe off-screen areas,
-	-- but would be dumped under the *new* rotate value, defeating the safety checks in restore!
-	--self.fbink_last_rect = nil
+	-- We also need to invalidate last_rect, so that grabClockBackground doesn't grab stale coordinates.
+	self.fbink_last_rect = nil
 end
 
 function NanoClock:handleFBInkReinit()
