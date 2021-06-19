@@ -548,12 +548,6 @@ function NanoClock:grabClockBackground()
 
 	logger.dbg("Grabbing clock bg")
 	FBInk.fbink_rect_dump(self.fbink_fd, self.fbink_last_rect, self.fbink_dump)
-
-	logger.dbg("Dump: %hux%hu+%hu+%hu",
-	           ffi.cast("unsigned short int", self.fbink_dump.area.width),
-	           ffi.cast("unsigned short int", self.fbink_dump.area.height),
-	           ffi.cast("unsigned short int", self.fbink_dump.area.left),
-	           ffi.cast("unsigned short int", self.fbink_dump.area.top))
 end
 
 function NanoClock:restoreClockBackground()
@@ -562,7 +556,7 @@ function NanoClock:restoreClockBackground()
 	end
 
 	logger.dbg("Restoring clock bg")
-	-- NOTE: FBInk will complain if we restore without a dump first (harmless)
+	-- NOTE: FBInk will (harmlessly) complain if we restore without a dump first
 	self.fbink_cfg.no_refresh = true
 	FBInk.fbink_restore(self.fbink_fd, self.fbink_cfg, self.fbink_dump)
 	self.fbink_cfg.no_refresh = false
