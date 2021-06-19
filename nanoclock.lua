@@ -98,8 +98,8 @@ function NanoClock:initFBInk()
 	self.fbink_dump = ffi.new("FBInkDump")
 
 	-- Enable logging to syslog ASAP
-	self.fbink_cfg.is_verbose = false
-	self.fbink_cfg.is_quiet = true
+	self.fbink_cfg.is_verbose = true
+	self.fbink_cfg.is_quiet = false
 	self.fbink_cfg.to_syslog = true
 	FBInk.fbink_update_verbosity(self.fbink_cfg)
 
@@ -535,6 +535,12 @@ function NanoClock:invalidateClockArea()
 	self.clock_area.y = 0
 	self.clock_area.w = math.huge
 	self.clock_area.h = math.huge
+
+	logger.dbg("Invalidated clock area")
+	-- We also need to invalidate last_rect, so that grabClockBackground doesn't dump completely bogus data...
+	-- Which could be fatal in case of a layout change, as the rect would describe off-screen areas,
+	-- but would be dumped under the *new* rotate value, defeating the safety checks in restore!
+	--self.fbink_last_rect = nil
 end
 
 function NanoClock:handleFBInkReinit()
@@ -550,7 +556,7 @@ function NanoClock:handleFBInkReinit()
 		-- In case of rotation, our clock area is now meaningless,
 		-- so, make sure to invalidate it so we force a repaint at the "new" coordinates...
 		if bit.band(reinit, C.OK_LAYOUT_CHANGE) ~= 0 then
-			logger.notice("Handled a framebuffer orientation change")
+			logger.notice("Handled a framebuffer layout change")
 			self:invalidateClockArea()
 		elseif bit.band(reinit, C.OK_ROTA_CHANGE) ~= 0 then
 			logger.notice("Handled a framebuffer rotation change")
@@ -564,7 +570,30 @@ function NanoClock:grabClockBackground()
 		return
 	end
 
-	FBInk.fbink_rect_dump(self.fbink_fd, self.fbink_last_rect, self.fbink_dump)
+	logger.dbg("Grabbing clock bg")
+	logger.dbg("Last rect: %hux%hu+%hu+%hu",
+	           ffi.cast("unsigned short int", self.fbink_last_rect.width),
+	           ffi.cast("unsigned short int", self.fbink_last_rect.height),
+	           ffi.cast("unsigned short int", self.fbink_last_rect.left),
+	           ffi.cast("unsigned short int", self.fbink_last_rect.top))
+	local ret = FBInk.fbink_rect_dump(self.fbink_fd, self.fbink_last_rect, self.fbink_dump)
+	if ret ~= 0 then
+		if self.fbink_last_rect then
+			logger.warn("Failed to dump rect %hux%hu+%hu+%hu (%s)",
+			            ffi.cast("unsigned short int", self.fbink_last_rect.width),
+			            ffi.cast("unsigned short int", self.fbink_last_rect.height),
+			            ffi.cast("unsigned short int", self.fbink_last_rect.left),
+			            ffi.cast("unsigned short int", self.fbink_last_rect.top),
+			            C.strerror(-ret))
+		else
+			logger.warn("Failed to dump empty rect (%s)", C.strerror(-ret))
+		end
+	end
+	logger.dbg("Dump: %hux%hu+%hu+%hu",
+	           ffi.cast("unsigned short int", self.fbink_dump.area.width),
+	           ffi.cast("unsigned short int", self.fbink_dump.area.height),
+	           ffi.cast("unsigned short int", self.fbink_dump.area.left),
+	           ffi.cast("unsigned short int", self.fbink_dump.area.top))
 end
 
 function NanoClock:restoreClockBackground()
@@ -573,9 +602,27 @@ function NanoClock:restoreClockBackground()
 	end
 
 	-- NOTE: FBInk will (harmlessly) complain if we attempt a restore without a dump first (EINVAL).
+	logger.dbg("Restoring clock bg")
+	logger.dbg("Dump: %hux%hu+%hu+%hu",
+	           ffi.cast("unsigned short int", self.fbink_dump.area.width),
+	           ffi.cast("unsigned short int", self.fbink_dump.area.height),
+	           ffi.cast("unsigned short int", self.fbink_dump.area.left),
+	           ffi.cast("unsigned short int", self.fbink_dump.area.top))
+	logger.dbg("Last rect: %hux%hu+%hu+%hu",
+	           ffi.cast("unsigned short int", self.fbink_last_rect.width),
+	           ffi.cast("unsigned short int", self.fbink_last_rect.height),
+	           ffi.cast("unsigned short int", self.fbink_last_rect.left),
+	           ffi.cast("unsigned short int", self.fbink_last_rect.top))
+	logger.dbg("Dump rota: %u vs. state rota: %u",
+	           ffi.cast("unsigned int", self.fbink_dump.rota),
+	           ffi.cast("unsigned int", self.fbink_state.current_rota))
 	self.fbink_cfg.no_refresh = true
-	FBInk.fbink_restore(self.fbink_fd, self.fbink_cfg, self.fbink_dump)
+	local ret = FBInk.fbink_restore(self.fbink_fd, self.fbink_cfg, self.fbink_dump)
+	if ret ~= 0 then
+		logger.warn("Failed to restore dump (%s)", C.strerror(-ret))
+	end
 	self.fbink_cfg.no_refresh = false
+	logger.dbg("Success")
 end
 
 function NanoClock:displayClock()
