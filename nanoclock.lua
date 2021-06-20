@@ -456,6 +456,17 @@ function NanoClock:handleConfig()
 	self.fbink_cfg.fontname = fbink_util.Font(self.cfg.display.font)
 	self.fbink_cfg.fontmult = self.cfg.display.size
 
+	-- If debugging is enabled, dump the config to the log...
+	if self.cfg.global.debug then
+		logger.dbg("--- Config ---")
+		for section, st in pairs(self.cfg) do
+			for k, v in pairs(st) do
+				logger.dbg("[%s] %s=%s", section, k, v)
+			end
+		end
+		logger.dbg("--------------")
+	end
+
 	-- Some settings require an fbink_init to take...
 	FBInk.fbink_init(self.fbink_fd, self.fbink_cfg)
 
