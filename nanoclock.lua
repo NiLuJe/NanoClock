@@ -469,8 +469,8 @@ function NanoClock:handleConfig()
 	-- If debugging is enabled, dump the config to the log...
 	if self.cfg.global.debug then
 		logger.dbg("--- Config ---")
-		for section, st in pairs(self.cfg) do
-			for k, v in pairs(st) do
+		for section, st in util.orderedPairs(self.cfg) do
+			for k, v in util.orderedPairs(st) do
 				-- Flag non-default values
 				local mod_marker = ""
 				if self.defaults[section][k] == nil or v ~= self.defaults[section][k] then
