@@ -926,6 +926,8 @@ function NanoClock:waitForEvent()
 
 									-- Yup, we need to update the clock
 									need_update = true
+									logger.dbg("Requesting clock update: damage rectangle %s intersects with the clock's %s",
+										tostring(update_area), tostring(self.clock_area))
 								else
 									logger.dbg("No clock update necessary: damage rectangle %s does not intersect with the clock's %s",
 										tostring(update_area), tostring(self.clock_area))
