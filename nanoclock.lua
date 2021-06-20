@@ -461,7 +461,7 @@ function NanoClock:handleConfig()
 		logger.dbg("--- Config ---")
 		for section, st in pairs(self.cfg) do
 			for k, v in pairs(st) do
-				logger.dbg("[%s] %s=%s", section, k, v)
+				logger.dbg("[%s] %s=%s", section, k, tostring(v))
 			end
 		end
 		logger.dbg("--------------")
