@@ -114,7 +114,8 @@ function NanoClock:initFBInk()
 
 	-- We may need to do some device-specific stuff down the line...
 	FBInk.fbink_get_state(self.fbink_cfg, self.fbink_state)
-	self.device_platform = ffi.string(self.fbink_state.device_platform)
+	local platform = ffi.string(self.fbink_state.device_platform)
+	self.device_platform = tonumber(platform:match("%d"))
 
 	-- So far, this has held across the full lineup
 	self.battery_sysfs = "/sys/devices/platform/pmic_battery.1/power_supply/mc13892_bat/capacity"
@@ -138,10 +139,13 @@ function NanoClock:rearmTimer()
 	-- Tick every minute
 	clock_timer.it_interval.tv_sec = 60
 	clock_timer.it_interval.tv_nsec = 0
-	if C.timerfd_settime(self.clock_fd,
-	                     bit.bor(C.TFD_TIMER_ABSTIME, C.TFD_TIMER_CANCEL_ON_SET),
-	                     clock_timer,
-	                     nil) == -1 then
+	-- NOTE: This isn't documented anywhere, but TFD_TIMER_CANCEL_ON_SET is only available circa Linux 3.0...
+	--       Don't try to use it on devices running an older kernel... :(
+	local flags = C.TFD_TIMER_ABSTIME
+	if self.device_platform >= 6 then
+		flags = bit.bor(flags, C.TFD_TIMER_CANCEL_ON_SET)
+	end
+	if C.timerfd_settime(self.clock_fd, flags, clock_timer, nil) == -1 then
 		local errno = ffi.errno()
 		if errno == C.ECANCELED then
 			-- Harmless, the timer is rearmed properly ;).
@@ -306,7 +310,9 @@ function NanoClock:handleConfig()
 
 	-- Was a log dump requested?
 	if self.cfg.global.dump_log then
-		os.execute("logread | grep '\\(nanoclock\\|nanoclock\\.sh\\)\\[[[:digit:]]\\+\\]' > " .. self.addon_folder .. "/nanoclock.log")
+		os.execute(
+			"logread | grep '\\(nanoclock\\|nanoclock\\.sh\\)\\[[[:digit:]]\\+\\]' > " .. self.addon_folder .. "/nanoclock.log"
+		)
 	end
 
 	-- Was debug logging requested?
@@ -487,7 +493,7 @@ end
 
 function NanoClock:getFrontLightLevel()
 	-- We can poke sysfs directly on Mark 7
-	if self.device_platform == "Mark 7" then
+	if self.device_platform == 7 then
 		local brightness = util.readFileAsNumber("/sys/class/backlight/mxc_msp430.0/actual_brightness")
 		return string.format(self.cfg.display.frontlight_pattern, brightness)
 	else
