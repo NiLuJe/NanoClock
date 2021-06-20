@@ -753,10 +753,6 @@ function NanoClock:waitForEvent()
 								-- Flag the wd as destroyed by the system
 								self.inotify_wd[self.config_path] = -1
 								removed = true
-
-								-- If we're logging to a file, that's usually our cue to stop writing to it,
-								-- so as not to wreak havoc when switching to USBMS...
-								self:resetLogger()
 							end
 
 							if bit.band(event.mask, C.IN_Q_OVERFLOW) ~= 0 then
@@ -775,6 +771,11 @@ function NanoClock:waitForEvent()
 				if removed then
 					-- Wait 150ms, because I/O...
 					C.usleep(150 * 1000)
+
+					-- If we're logging to a file, that's usually our cue to stop writing to it,
+					-- so as not to wreak havoc when switching to USBMS...
+					self:resetLogger()
+
 					self:setupInotify()
 				end
 			end
