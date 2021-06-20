@@ -947,6 +947,8 @@ function NanoClock:waitForEvent()
 									self:grabClockBackground()
 
 									self:displayClock("damage")
+
+									need_update = false
 								end
 							end
 						else
