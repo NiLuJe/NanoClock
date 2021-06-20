@@ -53,7 +53,7 @@ local NanoClock = {
 	marker_found = false,
 	clock_area = Geom:new{x = 0, y = 0, w = math.huge, h = math.huge},
 	nickel_mtime = 0,
-	fl_brightness = "??",
+	fl_brightness = -1,
 
 	-- I18N stuff
 	days_map = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" },
@@ -507,11 +507,11 @@ function NanoClock:getFrontLightLevel()
 		-- Avoid parsing it again if it hasn't changed.
 		local nickel_mtime = lfs.attributes(self.nickel_config, "modification")
 		if not nickel_mtime then
-			return self.fl_brightness
+			return string.format(self.cfg.display.frontlight_pattern, self.fl_brightness)
 		end
 
 		if nickel_mtime == self.nickel_mtime then
-			return self.fl_brightness
+			return string.format(self.cfg.display.frontlight_pattern, self.fl_brightness)
 		else
 			self.nickel_mtime = nickel_mtime
 		end
