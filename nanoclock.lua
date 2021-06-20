@@ -843,6 +843,7 @@ function NanoClock:waitForEvent()
 
 			if bit.band(self.pfds[0].revents, C.POLLIN) ~= 0 then
 				local overflowed = false
+				local need_update = false
 
 				while true do
 					local len = C.read(self.damage_fd, damage, ffi.sizeof(damage))
@@ -887,7 +888,8 @@ function NanoClock:waitForEvent()
 							end
 
 							if damage.queue_size > 1 then
-								-- We'll never react to anything that isn't the final event in the queue.
+								-- This shouldn't happen all that much in practice,
+								-- but is an interesting data point ;).
 								logger.dbg("Stale damage event (%d more ahead)!",
 									ffi.cast("int", damage.queue_size - 1))
 							else
@@ -898,43 +900,51 @@ function NanoClock:waitForEvent()
 									self.marker_found = true
 									overflowed = false
 								end
+							end
 
-								-- Otherwise, check that it is *not* our own damage event,
-								-- *and* that we previously *did* see ours...
-								if self.marker_found and damage.data.update_marker ~= self.clock_marker then
-									-- We need to handle potential changes in the framebuffer format/layout,
-									-- because that could mean that the clock area we remember may now be stale...
-									self:handleFBInkReinit()
+							-- Go though *every* damage event in the queue, and check the ones
+							-- subsequent to our previous clock update to see if they touched it...
+							if self.marker_found and damage.data.update_marker ~= self.clock_marker then
+								-- We need to handle potential changes in the framebuffer format/layout,
+								-- because that could mean that the clock area we remember may now be stale...
+								self:handleFBInkReinit()
 
-									-- Then, that it actually drew over our clock...
-									local update_area = Geom:new{
-										x = damage.data.update_region.left,
-										y = damage.data.update_region.top,
-										w = damage.data.update_region.width,
-										h = damage.data.update_region.height,
-									}
-									if update_area:intersectWith(self.clock_area) then
-										-- We'll need to know if nightmode is currently enabled to do the same...
-										if bit.band(damage.data.flags, C.EPDC_FLAG_ENABLE_INVERSION) ~= 0 then
-											self.fbink_cfg.is_nightmode = true
-										else
-											self.fbink_cfg.is_nightmode = false
-										end
-
-										-- If the config requires it, this will grab the pristine clock background,
-										-- to be used for autorefresh & backgroundless trickery ;).
-										self:grabClockBackground()
-
-										self:displayClock("damage")
+								-- Then, that it actually drew over our clock...
+								local update_area = Geom:new{
+									x = damage.data.update_region.left,
+									y = damage.data.update_region.top,
+									w = damage.data.update_region.width,
+									h = damage.data.update_region.height,
+								}
+								if update_area:intersectWith(self.clock_area) then
+									-- We'll need to know if nightmode is currently enabled to do the same...
+									if bit.band(damage.data.flags, C.EPDC_FLAG_ENABLE_INVERSION) ~= 0 then
+										self.fbink_cfg.is_nightmode = true
 									else
-										logger.dbg("No clock update necessary: damage rectangle %s does not intersect with the clock's %s",
-											tostring(update_area), tostring(self.clock_area))
+										self.fbink_cfg.is_nightmode = false
 									end
+
+									-- Yup, we need to update the clock
+									need_update = true
 								else
-									logger.dbg("No clock update necessary: damage marker: %u vs. clock marker: %u (found: %s)",
-											ffi.cast("unsigned int", damage.data.update_marker),
-											ffi.cast("unsigned int", self.clock_marker),
-											tostring(self.marker_found))
+									logger.dbg("No clock update necessary: damage rectangle %s does not intersect with the clock's %s",
+										tostring(update_area), tostring(self.clock_area))
+								end
+							else
+								logger.dbg("No clock update necessary: damage marker: %u vs. clock marker: %u (found: %s)",
+										ffi.cast("unsigned int", damage.data.update_marker),
+										ffi.cast("unsigned int", self.clock_marker),
+										tostring(self.marker_found))
+							end
+
+							-- We only want to potentially update the clock on the *final* event in the queue.
+							if damage.queue_size == 1 then
+								if need_update then
+									-- If the config requires it, this will grab the pristine clock background,
+									-- to be used for autorefresh & backgroundless trickery ;).
+									self:grabClockBackground()
+
+									self:displayClock("damage")
 								end
 							end
 						else
