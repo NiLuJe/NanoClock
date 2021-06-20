@@ -56,9 +56,10 @@ local log_f = nil
 -- NOTE: We can't use io & friends because we pass cdata values...
 --       So, just go full stdio instead of unpacking the var args.
 local function flog(...)
-	if C.fprintf(log_f, ...) < 0 then
+	if C.fprintf(log_f, "%s nanoclock: ", os.date("%b %d %H:%M:%S")) < 0 then
 		LVL_FUNCTIONS.warn("Failed to write to log file")
 	end
+	C.fprintf(log_f, ...)
 	C.fprintf(log_f, "\n")
 
 	if C.fflush(log_f) ~= 0 then
