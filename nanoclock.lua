@@ -265,22 +265,6 @@ local function coerceToBool(val)
 	end
 end
 
-function NanoClock:resetLogger()
-	-- Was logging to a file instead of the syslog requested?
-	-- If the mountpoint is currently inaccessible, logger will safely fall back to syslog.
-	local log_file = nil
-	if self.cfg.global.log_to_file then
-		log_file = self.addon_folder .. "/nanoclock.log"
-	end
-
-	-- Was debug logging requested?
-	if self.cfg.global.debug then
-		logger:setLevel(logger.levels.dbg, log_file)
-	else
-		logger:setLevel(logger.levels.info, log_file)
-	end
-end
-
 function NanoClock:handleConfig()
 	-- Coerce various settings to true boolean values to handle older configs...
 	self.cfg.global.uninstall = coerceToBool(self.cfg.global.uninstall)
@@ -299,8 +283,17 @@ function NanoClock:handleConfig()
 		self:die("Uninstalled!")
 	end
 
-	-- Handle logging...
-	self:resetLogger()
+	-- Was a log dump requested?
+	if self.cfg.global.dump_log then
+		os.execute("logread | grep 'nanoclock\\[[[:digit:]]\\+\\]' > " .. self.addon_folder .. "/nanoclock.log")
+	end
+
+	-- Was debug logging requested?
+	if self.cfg.global.debug then
+		logger:setLevel(logger.levels.dbg)
+	else
+		logger:setLevel(logger.levels.info)
+	end
 
 	-- Massage various settings into a usable form
 	if self.cfg.display.backgroundless then
@@ -771,11 +764,6 @@ function NanoClock:waitForEvent()
 				if removed then
 					-- Wait 150ms, because I/O...
 					C.usleep(150 * 1000)
-
-					-- If we're logging to a file, that's usually our cue to stop writing to it,
-					-- so as not to wreak havoc when switching to USBMS...
-					self:resetLogger()
-
 					self:setupInotify()
 				end
 			end
@@ -788,9 +776,6 @@ function NanoClock:waitForEvent()
 
 				-- If the config requires it, this will restore the previous, pristine clock background.
 				-- This avoids overlapping text with display modes that skip background pixels.
-				-- NOTE: This would all be well and good,
-				--       if not for the fact that the very fact of holding a fd inside onboard
-				--       prevents us from ever getting an IN_IGNORED in the first place...
 				self:restoreClockBackground()
 
 				self:displayClock()
@@ -936,7 +921,6 @@ function NanoClock:fini()
 	end
 	os.execute("rmmod mxc_epdc_fb_damage")
 	C.closelog()
-	logger.close()
 end
 
 return NanoClock:main()
