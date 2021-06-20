@@ -474,9 +474,9 @@ function NanoClock:handleConfig()
 				-- Flag non-default values
 				local mod_marker = ""
 				if self.defaults[section][k] == nil or v ~= self.defaults[section][k] then
-					mod_marker = "* "
+					mod_marker = "*"
 				end
-				logger.dbg("%s[%s] %s=%s", mod_marker, section, k, tostring(v))
+				logger.dbg("%-2s[%s] %-22s = %s", mod_marker, section, k, tostring(v))
 			end
 		end
 		logger.dbg("--------------")
