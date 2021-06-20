@@ -471,7 +471,12 @@ function NanoClock:handleConfig()
 		logger.dbg("--- Config ---")
 		for section, st in pairs(self.cfg) do
 			for k, v in pairs(st) do
-				logger.dbg("[%s] %s=%s", section, k, tostring(v))
+				-- Flag non-default values
+				local mod_marker = ""
+				if self.defaults[section][k] == nil or v ~= self.defaults[section][k] then
+					mod_marker = "* "
+				end
+				logger.dbg("%s[%s] %s=%s", mod_marker, section, k, tostring(v))
 			end
 		end
 		logger.dbg("--------------")
