@@ -265,6 +265,22 @@ local function coerceToBool(val)
 	end
 end
 
+function NanoClock:resetLogger()
+	-- Was logging to a file instead of the syslog requested?
+	-- If the mountpoint is currently inaccessible, logger will safely fall back to syslog.
+	local log_file = nil
+	if self.cfg.global.log_to_file then
+		log_file = self.addon_folder .. "/nanoclock.log"
+	end
+
+	-- Was debug logging requested?
+	if self.cfg.global.debug then
+		logger:setLevel(logger.levels.dbg, log_file)
+	else
+		logger:setLevel(logger.levels.info, log_file)
+	end
+end
+
 function NanoClock:handleConfig()
 	-- Coerce various settings to true boolean values to handle older configs...
 	self.cfg.global.uninstall = coerceToBool(self.cfg.global.uninstall)
@@ -283,21 +299,8 @@ function NanoClock:handleConfig()
 		self:die("Uninstalled!")
 	end
 
-	-- Was logging to a file instead of the syslog requested?
-	-- NOTE: Apparently no need to attempt to deal with USBMS in particular,
-	--       Nickel only does lazy unmounts, and stdio appears to magic something up
-	--       and buffer stuff for a while without all hell breaking loose...
-	local log_file = nil
-	if self.cfg.global.log_to_file then
-		log_file = self.addon_folder .. "/nanoclock.log"
-	end
-
-	-- Was debug logging requested?
-	if self.cfg.global.debug then
-		logger:setLevel(logger.levels.dbg, log_file)
-	else
-		logger:setLevel(logger.levels.info, log_file)
-	end
+	-- Handle logging...
+	self:resetLogger()
 
 	-- Massage various settings into a usable form
 	if self.cfg.display.backgroundless then
@@ -750,6 +753,10 @@ function NanoClock:waitForEvent()
 								-- Flag the wd as destroyed by the system
 								self.inotify_wd[self.config_path] = -1
 								removed = true
+
+								-- If we're logging to a file, that's usually our cue to stop writing to it,
+								-- so as not to wreak havoc when switching to USBMS...
+								self:resetLogger()
 							end
 
 							if bit.band(event.mask, C.IN_Q_OVERFLOW) ~= 0 then
