@@ -283,11 +283,17 @@ function NanoClock:handleConfig()
 		self:die("Uninstalled!")
 	end
 
+	-- Was logging to a file instead of the syslog requested?
+	local log_file = nil
+	if self.cfg.global.log_to_file then
+		log_file = self.addon_folder .. "/nanoclock.log"
+	end
+
 	-- Was debug logging requested?
 	if self.cfg.global.debug then
-		logger:setLevel(logger.levels.dbg)
+		logger:setLevel(logger.levels.dbg, log_file)
 	else
-		logger:setLevel(logger.levels.info)
+		logger:setLevel(logger.levels.info, log_file)
 	end
 
 	-- Massage various settings into a usable form
@@ -916,6 +922,7 @@ function NanoClock:fini()
 	end
 	os.execute("rmmod mxc_epdc_fb_damage")
 	C.closelog()
+	logger.close()
 end
 
 return NanoClock:main()

@@ -81,6 +81,8 @@ size_t fwrite(const void *restrict, size_t, size_t, FILE *restrict);
 int fclose(FILE *);
 int feof(FILE *) __attribute__((nothrow, leaf));
 int ferror(FILE *) __attribute__((nothrow, leaf));
+int fprintf(FILE *restrict, const char *restrict, ...);
+int fflush(FILE *);
 int setenv(const char *, const char *, int) __attribute__((nothrow, leaf));
 int unsetenv(const char *) __attribute__((nothrow, leaf));
 static const int LOG_CONS = 2;

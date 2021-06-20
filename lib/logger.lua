@@ -51,6 +51,22 @@ local LVL_FUNCTIONS = {
 	crit = function(...) log(LOG_PRIO.crit, ...) end,
 }
 
+-- Quick'n dirty logging to file hackery...
+local log_f = nil
+-- NOTE: We can't use io & friends because we pass cdata values...
+--       So, just go full stdio instead of unpacking the var args.
+local function flog(...)
+	if C.fprintf(log_f, ...) < 0 then
+		LVL_FUNCTIONS.warn("Failed to write to log file")
+	end
+	C.fprintf(log_f, "\n")
+
+	if C.fflush(log_f) ~= 0 then
+		local errno = ffi.errno()
+		LVL_FUNCTIONS.warn("Failed to flush the log file (%s)", C.strerror(errno))
+	end
+end
+
 --[[--
 Set logging level. By default, level is set to info.
 
@@ -59,13 +75,36 @@ Set logging level. By default, level is set to info.
 @usage
 Logger:setLevel(Logger.levels.warn)
 ]]
-function Logger:setLevel(new_lvl)
+function Logger:setLevel(new_lvl, file)
+	-- Close current FILE, if any
+	self.close()
+	-- Open the new one, if requested
+	if file then
+		log_f = C.fopen(file, "we")
+		-- If fopen failed, fall back to syslog
+		if log_f == nil then
+			LVL_FUNCTIONS.warn("Failed to open log file `%s`", file)
+			file = nil
+		end
+	end
+
 	for lvl_name, lvl_value in pairs(LOG_PRIO) do
 		if new_lvl >= lvl_value then
-			self[lvl_name] = LVL_FUNCTIONS[lvl_name]
+			if file then
+				self[lvl_name] = flog
+			else
+				self[lvl_name] = LVL_FUNCTIONS[lvl_name]
+			end
 		else
 			self[lvl_name] = noop
 		end
+	end
+end
+
+function Logger.close()
+	if log_f ~= nil then
+		C.fclose(log_f)
+		log_f = nil
 	end
 end
 
