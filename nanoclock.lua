@@ -155,6 +155,10 @@ function NanoClock:armTimer()
 
 	-- And update the poll table
 	self.pfds[2].fd = self.clock_fd
+
+	logger.dbg("Armed clock tick timerfd, starting @ %ld (now: %ld)",
+	           ffi.cast("time_t", clock_timer.it_value.tv_sec),
+	           ffi.cast("time_t", now_ts.tv_sec))
 end
 
 function NanoClock:disarmTimer()
@@ -166,6 +170,8 @@ function NanoClock:disarmTimer()
 	-- Keep it set to a negative value to make poll ignore it
 	self.clock_fd = -1
 	self.pfds[2].fd = -1
+
+	logger.dbg("Disarmed clock tick timerfd")
 end
 
 function NanoClock:initInotify()
@@ -202,6 +208,9 @@ function NanoClock:setupInotify()
 			self:die(string.format("inotify_add_watch: %s", C.strerror(errno)))
 		end
 	else
+		logger.dbg("Setup an inotify watch @ wd %d for `%s`",
+		           ffi.cast("int", self.inotify_wd[self.config_path]),
+		           self.config_path)
 		-- If we've just recreated the watch after an unmount/remount cycle, force a config reload,
 		-- as it may have been updated outside of our oversight (e.g., USBMS)...
 		if was_destroyed then
