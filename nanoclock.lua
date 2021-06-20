@@ -788,6 +788,9 @@ function NanoClock:waitForEvent()
 
 				-- If the config requires it, this will restore the previous, pristine clock background.
 				-- This avoids overlapping text with display modes that skip background pixels.
+				-- NOTE: This would all be well and good,
+				--       if not for the fact that the very fact of holding a fd inside onboard
+				--       prevents us from ever getting an IN_IGNORED in the first place...
 				self:restoreClockBackground()
 
 				self:displayClock()
