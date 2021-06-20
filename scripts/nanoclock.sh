@@ -1,5 +1,10 @@
 #!/bin/sh
 
+# Make sure we have a syslog running, as it's only started later by Nickel...
+if ! pkill -0 syslogd ; then
+	syslogd -C500 -S
+fi
+
 # Misc helper functions
 is_integer()
 {
@@ -22,6 +27,7 @@ fi
 
 # Wait until onboard is mounted, nickel is up, and the boot anim is done.
 until grep -q /mnt/onboard /proc/mounts && pkill -0 nickel && ! pkill -0 on-animator.sh ; do
+	logger -p "DAEMON.NOTICE" -t "${SCRIPT_NAME}[$$]" "Waiting for the boot process to complete . . ."
 	sleep 5
 done
 
