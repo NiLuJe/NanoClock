@@ -147,7 +147,7 @@ function NanoClock:rearmTimer()
 			-- Harmless, the timer is rearmed properly ;).
 			logger.warn("Caught an unread discontinuous clock change")
 		else
-			self:die(string.format("timerfd_settime: %s", C.strerror(errno)))
+			self:die(string.format("timerfd_settime: %s", ffi.string(C.strerror(errno))))
 		end
 	end
 
@@ -164,7 +164,7 @@ function NanoClock:armTimer()
 	self.clock_fd = C.timerfd_create(C.CLOCK_REALTIME, bit.bor(C.TFD_NONBLOCK, C.TFD_CLOEXEC))
 	if self.clock_fd == -1 then
 		local errno = ffi.errno()
-		self:die(string.format("timerfd_create: %s", C.strerror(errno)))
+		self:die(string.format("timerfd_create: %s", ffi.string(C.strerror(errno))))
 	end
 
 	self:rearmTimer()
@@ -190,7 +190,7 @@ function NanoClock:initInotify()
 	self.inotify_fd = C.inotify_init1(bit.bor(C.IN_NONBLOCK, C.IN_CLOEXEC))
 	if self.inotify_fd == -1 then
 		local errno = ffi.errno()
-		self:die(string.format("inotify_init1: %s", C.strerror(errno)))
+		self:die(string.format("inotify_init1: %s", ffi.string(C.strerror(errno))))
 	end
 end
 
@@ -217,7 +217,7 @@ function NanoClock:setupInotify()
 		-- (Granted, the only damage events we should catch during an USBMS session are ours,
 		-- and the only way that can happen is via timerfd ticks ;)).
 		if errno ~= C.ENOENT then
-			self:die(string.format("inotify_add_watch: %s", C.strerror(errno)))
+			self:die(string.format("inotify_add_watch: %s", ffi.string(C.strerror(errno))))
 		end
 	else
 		logger.dbg("Setup an inotify watch @ wd %d for `%s`",
@@ -721,7 +721,7 @@ function NanoClock:waitForEvent()
 		if poll_num == -1 then
 			local errno = ffi.errno()
 			if errno ~= C.EINTR then
-				self:die(string.format("poll: %s", C.strerror(errno)))
+				self:die(string.format("poll: %s", ffi.string(C.strerror(errno))))
 			end
 		elseif poll_num > 0 then
 			if bit.band(self.pfds[1].revents, C.POLLIN) ~= 0 then
@@ -737,16 +737,16 @@ function NanoClock:waitForEvent()
 						end
 
 						if errno ~= C.EINTR then
-							self:die(string.format("read: %s", C.strerror(errno)))
+							self:die(string.format("read: %s", ffi.string(C.strerror(errno))))
 						end
 					elseif len == 0 then
 						-- Should never happen
 						local errno = C.EPIPE
-						self:die(string.format("read: %s", C.strerror(errno)))
+						self:die(string.format("read: %s", ffi.string(C.strerror(errno))))
 					elseif len < ffi.sizeof("struct inotify_event") then
 						-- Should *also* never happen ;p.
 						local errno = C.EINVAL
-						self:die(string.format("read: %s", C.strerror(errno)))
+						self:die(string.format("read: %s", ffi.string(C.strerror(errno))))
 					else
 						local ptr = buf
 						while ptr < buf + len do
@@ -843,16 +843,16 @@ function NanoClock:waitForEvent()
 						end
 
 						if errno ~= C.EINTR then
-							self:die(string.format("read: %s", C.strerror(errno)))
+							self:die(string.format("read: %s", ffi.string(C.strerror(errno))))
 						end
 					elseif len == 0 then
 						-- Should never happen
 						local errno = C.EPIPE
-						self:die(string.format("read: %s", C.strerror(errno)))
+						self:die(string.format("read: %s", ffi.string(C.strerror(errno))))
 					elseif len ~= ffi.sizeof(damage) then
 						-- Should *also* never happen ;p.
 						local errno = C.EINVAL
-						self:die(string.format("read: %s", C.strerror(errno)))
+						self:die(string.format("read: %s", ffi.string(C.strerror(errno))))
 					else
 						-- Okay, check that we're iterating over a valid event.
 						if damage.format == C.DAMAGE_UPDATE_DATA_V1_NTX or
