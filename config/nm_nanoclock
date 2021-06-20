@@ -1,5 +1,5 @@
 # Dump NanoClock's log to a file, because Dev mode log dumps are now encrypted :/.
 
-menu_item : main : NanoClock Log : cmd_spawn : quiet : logread | grep 'nanoclock\[[[:digit:]]\+\]' > /mnt/onboard/.adds/nanoclock/nanoclock.log
+menu_item : main : NanoClock Log : cmd_spawn : quiet : logread | grep '\(nanoclock\|nanoclock\.sh\)\[[[:digit:]]\+\]' > /mnt/onboard/.adds/nanoclock/nanoclock.log
   chain_success : dbg_toast : Dumped NanoClock log in .adds/nanoclock/nanoclock.log
   chain_failure : dbg_toast : Failed to dump NanoClock log!
