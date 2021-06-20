@@ -284,6 +284,9 @@ function NanoClock:handleConfig()
 	end
 
 	-- Was logging to a file instead of the syslog requested?
+	-- NOTE: Apparently no need to attempt to deal with USBMS in particular,
+	--       Nickel only does lazy unmounts, and stdio appears to magic something up
+	--       and buffer stuff for a while without all hell breaking loose...
 	local log_file = nil
 	if self.cfg.global.log_to_file then
 		log_file = self.addon_folder .. "/nanoclock.log"
