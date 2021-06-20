@@ -246,6 +246,10 @@ function NanoClock:initConfig()
 
 	-- Start by loading the defaults...
 	self.defaults = INIFile.parse(self.defaults_path)
+	-- NOTE: An empty value means the key doesn't make it to the table,
+	--       but we actually want an empty string by default here...
+	self.defaults.display.battery_hidden_pattern = ""
+
 	-- Then the user config...
 	self.cfg = INIFile.parse(self.config_path)
 
@@ -461,19 +465,6 @@ function NanoClock:handleConfig()
 	self.fbink_cfg.voffset = self.cfg.display.offset_y
 	self.fbink_cfg.fontname = fbink_util.Font(self.cfg.display.font)
 	self.fbink_cfg.fontmult = self.cfg.display.size
-
-	-- Patterns setup
-	if not self.cfg.display.battery_hidden_pattern then
-		-- An empty value means the key doesn't make it to the table,
-		-- but we actually want an empty string by default here...
-		self.cfg.display.battery_hidden_pattern = ""
-	end
-	if not self.cfg.display.battery_shown_pattern then
-		self.cfg.display.battery_shown_pattern = ""
-	end
-	if not self.cfg.display.frontlight_pattern then
-		self.cfg.display.frontlight_pattern = ""
-	end
 
 	-- If debugging is enabled, dump the config to the log...
 	if self.cfg.global.debug then
