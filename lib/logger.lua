@@ -81,7 +81,7 @@ function Logger:setLevel(new_lvl, file)
 	self.close()
 	-- Open the new one, if requested
 	if file then
-		log_f = C.fopen(file, "we")
+		log_f = C.fopen(file, "ae")
 		-- If fopen failed, fall back to syslog
 		if log_f == nil then
 			LVL_FUNCTIONS.warn("Failed to open log file `%s`", file)
