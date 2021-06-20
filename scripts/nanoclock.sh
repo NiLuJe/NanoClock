@@ -14,12 +14,6 @@ SCRIPT_NAME="$(basename "${0}")"
 NANOCLOCK_DIR="/usr/local/NanoClock"
 FBINK_BIN="./bin/fbink"
 
-# Make sure we have a syslog running, as it's only started later by Nickel...
-if ! pkill -0 syslogd ; then
-	syslogd -C500 -S
-	logger -p "DAEMON.NOTICE" -t "${SCRIPT_NAME}[$$]" "Launched syslogd early"
-fi
-
 # We expect our PWD to be NanoClock's base folder
 if ! cd "${NANOCLOCK_DIR}" ; then
 	logger -p "DAEMON.CRIT" -t "${SCRIPT_NAME}[$$]" "NanoClock base folder not found!"
