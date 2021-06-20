@@ -239,7 +239,7 @@ function NanoClock:reloadConfig()
 	-- Force a clock refresh for good measure,
 	-- (and also to ease recovering from print failures stemming from config issues).
 	self:handleFBInkReinit()
-	self:displayClock()
+	self:displayClock("config")
 end
 
 function NanoClock:sanitizeConfig()
@@ -611,7 +611,7 @@ function NanoClock:restoreClockBackground()
 	self.fbink_cfg.no_refresh = false
 end
 
-function NanoClock:displayClock()
+function NanoClock:displayClock(trigger)
 	if not self:prepareClock() then
 		-- The clock was stopped, we're done
 		logger.dbg("Clock is stopped")
@@ -642,7 +642,7 @@ function NanoClock:displayClock()
 	-- Remember our marker to be able to ignore its damage event, otherwise we'd be stuck in an infinite loop ;).
 	-- c.f., the whole logic in :waitForEvent().
 	self.clock_marker = FBInk.fbink_get_last_marker()
-	logger.dbg("Updated clock (marker: %u)", ffi.cast("unsigned int", self.clock_marker))
+	logger.dbg("[%s] Updated clock (marker: %u)", trigger, ffi.cast("unsigned int", self.clock_marker))
 	-- Reset the damage tracker
 	self.marker_found = false
 
@@ -778,7 +778,7 @@ function NanoClock:waitForEvent()
 				-- This avoids overlapping text with display modes that skip background pixels.
 				self:restoreClockBackground()
 
-				self:displayClock()
+				self:displayClock("clock")
 			end
 
 			if bit.band(self.pfds[0].revents, C.POLLIN) ~= 0 then
@@ -865,7 +865,7 @@ function NanoClock:waitForEvent()
 										-- to be used for autorefresh & backgroundless trickery ;).
 										self:grabClockBackground()
 
-										self:displayClock()
+										self:displayClock("damage")
 									else
 										logger.dbg("No clock update necessary: damage rectangle %s does not intersect with the clock's %s",
 											tostring(update_area), tostring(self.clock_area))
@@ -898,7 +898,7 @@ function NanoClock:main()
 	logger.info("Initialized NanoClock %s with FBInk %s", self.version, FBInk.fbink_version())
 
 	-- Display the clock once on startup, so that we start with sane clock marker & area tracking
-	self:displayClock()
+	self:displayClock("init")
 
 	-- Main loop
 	self:waitForEvent()
