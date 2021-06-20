@@ -10,6 +10,7 @@ static const int EPIPE = 32;
 static const int ENOSYS = 38;
 static const int ENOTSUP = 95;
 static const int ETIMEDOUT = 110;
+static const int ECANCELED = 125;
 char *strerror(int) __attribute__((nothrow, leaf));
 static const int O_APPEND = 1024;
 static const int O_CREAT = 64;

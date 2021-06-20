@@ -127,6 +127,35 @@ function NanoClock:initDamage()
 	end
 end
 
+function NanoClock:rearmTimer()
+	-- Arm it to get a tick on every minute, on the dot.
+	local now_ts = ffi.new("struct timespec")
+	C.clock_gettime(C.CLOCK_REALTIME, now_ts)
+	local clock_timer = ffi.new("struct itimerspec")
+	-- Round the current timestamp up to the next multiple of 60 to get us the next minute on the dot.
+	clock_timer.it_value.tv_sec = math.floor((now_ts.tv_sec + 60 - 1) / 60) * 60
+	clock_timer.it_value.tv_nsec = 0
+	-- Tick every minute
+	clock_timer.it_interval.tv_sec = 60
+	clock_timer.it_interval.tv_nsec = 0
+	if C.timerfd_settime(self.clock_fd,
+	                     bit.bor(C.TFD_TIMER_ABSTIME, C.TFD_TIMER_CANCEL_ON_SET),
+	                     clock_timer,
+	                     nil) == -1 then
+		local errno = ffi.errno()
+		if errno == C.ECANCELED then
+			-- Harmless, the timer is rearmed properly ;).
+			logger.warn("Caught an unread discontinuous clock change")
+		else
+			self:die(string.format("timerfd_settime: %s", C.strerror(errno)))
+		end
+	end
+
+	logger.dbg("Armed clock tick timerfd, starting @ %ld (now: %ld)",
+	           ffi.cast("time_t", clock_timer.it_value.tv_sec),
+	           ffi.cast("time_t", now_ts.tv_sec))
+end
+
 function NanoClock:armTimer()
 	if self.clock_fd ~= -1 then
 		return
@@ -138,27 +167,10 @@ function NanoClock:armTimer()
 		self:die(string.format("timerfd_create: %s", C.strerror(errno)))
 	end
 
-	-- Arm it to get a tick on every minute, on the dot.
-	local now_ts = ffi.new("struct timespec")
-	C.clock_gettime(C.CLOCK_REALTIME, now_ts)
-	local clock_timer = ffi.new("struct itimerspec")
-	-- Round the current timestamp up to the next multiple of 60 to get us the next minute on the dot.
-	clock_timer.it_value.tv_sec = math.floor((now_ts.tv_sec + 60 - 1) / 60) * 60
-	clock_timer.it_value.tv_nsec = 0
-	-- Tick every minute
-	clock_timer.it_interval.tv_sec = 60
-	clock_timer.it_interval.tv_nsec = 0
-	if C.timerfd_settime(self.clock_fd, C.TFD_TIMER_ABSTIME, clock_timer, nil) == -1 then
-		local errno = ffi.errno()
-		self:die(string.format("timerfd_settime: %s", C.strerror(errno)))
-	end
+	self:rearmTimer()
 
 	-- And update the poll table
 	self.pfds[2].fd = self.clock_fd
-
-	logger.dbg("Armed clock tick timerfd, starting @ %ld (now: %ld)",
-	           ffi.cast("time_t", clock_timer.it_value.tv_sec),
-	           ffi.cast("time_t", now_ts.tv_sec))
 end
 
 function NanoClock:disarmTimer()
@@ -779,7 +791,16 @@ function NanoClock:waitForEvent()
 
 			if bit.band(self.pfds[2].revents, C.POLLIN) ~= 0 then
 				-- We don't actually care about the expiration count, so just read to clear the event
-				C.read(self.clock_fd, exp, ffi.sizeof(exp[0]))
+				if C.read(self.clock_fd, exp, ffi.sizeof(exp[0])) == -1 then
+					-- If there was a discontinuous clock change, rearm the timer
+					local errno = ffi.errno()
+					if errno == C.ECANCELED then
+						logger.notice("Discontinuous clock change detected, rearming the timer")
+						self:rearmTimer()
+					end
+
+					exp[0] = 0
+				end
 
 				self:handleFBInkReinit()
 
@@ -787,7 +808,7 @@ function NanoClock:waitForEvent()
 				-- This avoids overlapping text with display modes that skip background pixels.
 				self:restoreClockBackground()
 
-				self:displayClock("clock")
+				self:displayClock("clock (" .. tostring(tonumber(exp[0])) .. ")")
 			end
 
 			if bit.band(self.pfds[0].revents, C.POLLIN) ~= 0 then
