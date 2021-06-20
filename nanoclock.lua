@@ -468,6 +468,12 @@ function NanoClock:handleConfig()
 		-- but we actually want an empty string by default here...
 		self.cfg.display.battery_hidden_pattern = ""
 	end
+	if not self.cfg.display.battery_shown_pattern then
+		self.cfg.display.battery_shown_pattern = ""
+	end
+	if not self.cfg.display.frontlight_pattern then
+		self.cfg.display.frontlight_pattern = ""
+	end
 
 	-- If debugging is enabled, dump the config to the log...
 	if self.cfg.global.debug then
