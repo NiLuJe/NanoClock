@@ -482,7 +482,7 @@ function NanoClock:getFrontLightLevel()
 	-- We can poke sysfs directly on Mark 7
 	if self.device_platform == "Mark 7" then
 		local brightness = util.readFileAsNumber("/sys/class/backlight/mxc_msp430.0/actual_brightness")
-		return tostring(brightness) .. "%"
+		return string.format(self.cfg.display.frontlight_pattern, brightness)
 	else
 		-- Otherwise, we have to look inside Nickel's config...
 		-- Avoid parsing it again if it hasn't changed.
@@ -499,10 +499,10 @@ function NanoClock:getFrontLightLevel()
 
 		local nickel = INIFile.parse(self.nickel_config)
 		if nickel and nickel.PowerOptions and nickel.PowerOptions.FrontLightLevel then
-			self.fl_brightness = tostring(nickel.PowerOptions.FrontLightLevel) .. "%"
-			return self.fl_brightness
+			self.fl_brightness = nickel.PowerOptions.FrontLightLevel
+			return string.format(self.cfg.display.frontlight_pattern, self.fl_brightness)
 		else
-			return "??"
+			return string.format(self.cfg.display.frontlight_pattern, -1)
 		end
 	end
 end
@@ -510,9 +510,9 @@ end
 function NanoClock:getBatteryLevel()
 	local gauge = util.readFileAsNumber(self.battery_sysfs)
 	if gauge >= self.cfg.display.battery_min and gauge <= self.cfg.display.battery_max then
-		return tostring(gauge) .. "%"
+		return string.format(self.cfg.display.battery_shown_pattern, gauge)
 	else
-		return ""
+		return string.format(self.cfg.display.battery_hidden_pattern)
 	end
 end
 
