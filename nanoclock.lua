@@ -175,10 +175,13 @@ function NanoClock:rearmMonotonicTimer()
 	-- If the REALTIME clock is drifting like mad, we switch to MONOTONIC after a while.
 	local mono_ts = ffi.new("struct timespec")
 	C.clock_gettime(C.CLOCK_MONOTONIC, mono_ts)
+	local now_ts = ffi.new("struct timespec")
+	C.clock_gettime(C.CLOCK_REALTIME, now_ts)
 	local clock_timer = ffi.new("struct itimerspec")
-	-- Tick every minute, starting in one minute
-	clock_timer.it_value.tv_sec = 60
+	-- Try to start ticking closer to the next REALTIME minute
+	clock_timer.it_value.tv_sec = (math.floor((now_ts.tv_sec + 60 - 1) / 60) * 60) - now_ts.tv_sec
 	clock_timer.it_value.tv_nsec = 0
+	-- Tick every minute
 	clock_timer.it_interval.tv_sec = 60
 	clock_timer.it_interval.tv_nsec = 0
 	if C.timerfd_settime(self.clock_fd, 0, clock_timer, nil) == -1 then
@@ -187,9 +190,8 @@ function NanoClock:rearmMonotonicTimer()
 	end
 
 	-- Also log REALTIME, to see how much fuckery is actually happening...
-	local now_ts = ffi.new("struct timespec")
-	C.clock_gettime(C.CLOCK_REALTIME, now_ts)
-	logger.dbg("Armed MONOTONIC clock tick timerfd (now: %ld.%.9ld [%ld.%.9ld])",
+	logger.dbg("Armed MONOTONIC clock tick timerfd, starting in %ld sec (now: %ld.%.9ld [%ld.%.9ld])",
+	           ffi.cast("time_t", clock_timer.it_value.tv_sec),
 	           ffi.cast("time_t", now_ts.tv_sec),
 	           ffi.cast("long int", now_ts.tv_nsec),
 	           ffi.cast("time_t", mono_ts.tv_sec),
