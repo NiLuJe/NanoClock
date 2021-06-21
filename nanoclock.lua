@@ -566,6 +566,7 @@ function NanoClock:handleConfig()
 	-- Toggle timerfd
 	if self.cfg.display.autorefresh then
 		-- If we'd fallen back to a MONOTONIC timer, make sure we rearm it as REALTIME again...
+		-- Nickel does a HCTOSYS at a few key points, and that may jog things into place.
 		if self.clock_source == C.CLOCK_MONOTONIC then
 			logger.notice("Restoring a standard REALTIME timer")
 			self.clock_source = C.CLOCK_REALTIME
