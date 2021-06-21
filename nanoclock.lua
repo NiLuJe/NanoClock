@@ -852,7 +852,10 @@ function NanoClock:waitForEvent()
 			if bit.band(self.pfds[2].revents, C.POLLIN) ~= 0 then
 				-- We don't actually care about the expiration count, so just read to clear the event
 				if C.read(self.clock_fd, exp, ffi.sizeof(exp[0])) == -1 then
-					-- If there was a discontinuous clock change, rearm the timer
+					-- If there was a discontinuous clock change, rearm the timer, and that's it.
+					-- We do *NOT* want to force a clock refresh,
+					-- because this is tripped after each wakeup from standby on Mk. 7,
+					-- and that's essentially after every page turn ;).
 					local errno = ffi.errno()
 					if errno == C.ECANCELED then
 						logger.dbg("Discontinuous clock change detected, rearming the timer")
