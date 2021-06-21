@@ -50,6 +50,8 @@ local NanoClock = {
 
 	-- State tracking
 	clock_marker = 0,
+	clock_source = C.CLOCK_REALTIME,
+	timer_resets = 0,
 	marker_found = false,
 	clock_area = Geom:new{x = 0, y = 0, w = math.huge, h = math.huge},
 	nickel_mtime = 0,
@@ -128,7 +130,7 @@ function NanoClock:initDamage()
 	end
 end
 
-function NanoClock:rearmTimer()
+function NanoClock:rearmRealtimeTimer()
 	-- Arm it to get a tick on every minute, on the dot.
 	local now_ts = ffi.new("struct timespec")
 	C.clock_gettime(C.CLOCK_REALTIME, now_ts)
@@ -193,21 +195,40 @@ function NanoClock:rearmMonotonicTimer()
 	           ffi.cast("long int", mono_ts.tv_nsec))
 end
 
+function NanoClock:rearmTimer()
+	-- If we've gone through a few too many discontinuous clock changes, switch to MONOTONIC
+	if self.timer_resets > 5 then
+		self.clock_source = C.CLOCK_MONOTONIC
+		self.timer_resets = 0
+
+		self:disarmTimer()
+		self:armTimer()
+	else
+		-- Otherwise, just rearm the current one.
+		if self.clock_source == C.CLOCK_MONOTONIC then
+			self:rearmMonotonicTimer()
+		else
+			self:rearmRealtimeTimer()
+		end
+	end
+end
+
 function NanoClock:armTimer()
 	if self.clock_fd ~= -1 then
 		return
 	end
 
-	self.clock_fd = C.timerfd_create(C.CLOCK_REALTIME, bit.bor(C.TFD_NONBLOCK, C.TFD_CLOEXEC))
+	self.clock_fd = C.timerfd_create(self.clock_source, bit.bor(C.TFD_NONBLOCK, C.TFD_CLOEXEC))
 	if self.clock_fd == -1 then
 		local errno = ffi.errno()
 		self:die(string.format("timerfd_create: %s", ffi.string(C.strerror(errno))))
 	end
 
-	-- Reset the discontinuous change counter
-	self.timer_resets = 0
-
-	self:rearmTimer()
+	if self.clock_source == C.CLOCK_MONOTONIC then
+		self:rearmMonotonicTimer()
+	else
+		self:rearmRealtimeTimer()
+	end
 
 	-- And update the poll table
 	self.pfds[2].fd = self.clock_fd
@@ -523,6 +544,14 @@ function NanoClock:handleConfig()
 
 	-- Toggle timerfd
 	if self.cfg.display.autorefresh then
+		-- If we'd fallen back to a MONOTONIC timer, make sure we rearm it as REALTIME again...
+		if self.clock_source == C.CLOCK_MONOTONIC then
+			self.clock_source = C.CLOCK_REALTIME
+			self.timer_resets = 0
+
+			self:disarmTimer()
+		end
+
 		self:armTimer()
 	else
 		self:disarmTimer()
