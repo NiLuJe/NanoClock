@@ -903,7 +903,6 @@ function NanoClock:waitForEvent()
 							-- because that'd result in a neat infinite loop ;).
 							if damage.data.update_marker == self.clock_marker then
 								self.marker_found = true
-								self.can_standby = true
 							end
 
 							-- If there was an overflow, we may *never* find our previous clock marker,
