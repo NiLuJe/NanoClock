@@ -825,8 +825,6 @@ function NanoClock:waitForEvent()
 						logger.notice("Discontinuous clock change detected, rearming the timer")
 						self:rearmTimer()
 					end
-
-					exp[0] = 0
 				end
 
 				self:handleFBInkReinit()
@@ -835,7 +833,7 @@ function NanoClock:waitForEvent()
 				-- This avoids overlapping text with display modes that skip background pixels.
 				self:restoreClockBackground()
 
-				self:displayClock("clock (" .. tostring(tonumber(exp[0])) .. ")")
+				self:displayClock("clock")
 			end
 
 			if bit.band(self.pfds[0].revents, C.POLLIN) ~= 0 then
