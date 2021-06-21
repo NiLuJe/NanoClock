@@ -178,7 +178,9 @@ function NanoClock:rearmMonotonicTimer()
 	local now_ts = ffi.new("struct timespec")
 	C.clock_gettime(C.CLOCK_REALTIME, now_ts)
 	local clock_timer = ffi.new("struct itimerspec")
-	-- Try to start ticking closer to the next REALTIME minute
+	-- Try to start ticking closer to the next REALTIME minute.
+	-- Not accurate, because we don't account for nanoseconds, and REALTIME is drifting anyway,
+	-- so we'll have to settle for +/- 1s ;).
 	clock_timer.it_value.tv_sec = (math.floor((now_ts.tv_sec + 60 - 1) / 60) * 60) - now_ts.tv_sec
 	clock_timer.it_value.tv_nsec = 0
 	-- Tick every minute
