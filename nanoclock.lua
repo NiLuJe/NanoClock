@@ -197,6 +197,15 @@ function NanoClock:initInotify()
 		local errno = ffi.errno()
 		self:die(string.format("inotify_init1: %s", ffi.string(C.strerror(errno))))
 	end
+
+	-- Setup a watch on /sys/power/wakeup_count to try to detect reader standby...
+	self.wakeup_path = "/sys/power/wakeup_count"
+	self.inotify_wd[self.wakeup_path] = C.inotify_add_watch(self.inotify_fd, self.wakeup_path, C.IN_MODIFY)
+	if self.inotify_wd[self.wakeup_path] == -1 then
+		-- Non-fatal
+		local errno = ffi.errno()
+		logger.warn("inotify_add_watch on %s: %s", self.wakeup_path, C.strerror(errno))
+	end
 end
 
 function NanoClock:setupInotify()
@@ -761,9 +770,19 @@ function NanoClock:waitForEvent()
 						while ptr < buf + len do
 							local event = ffi.cast("const struct inotify_event*", ptr)
 
-							-- NOTE: If we happened to watch multiple files,
+							-- NOTE: If we happened to watch multiple files with the same mask,
 							--       this is where we'd match event.wd against out own mapping in self.inotify_wd
 							--       But we don't, so, always assume event.wd == self.inotify_wd[self.config_path]
+
+							if bit.band(event.mask, C.IN_MODIFY) ~= 0 then
+								-- Except here, because we only watch for modify on self.wakeup_path ;).
+								logger.dbg("Tripped IN_CLOSE_WRITE for wd %d (wakeup's: %d)",
+								           ffi.cast("int", event.wd),
+								           ffi.cast("int", self.inotify_wd[self.wakeup_path]))
+
+								-- PoC, think of something better (color shift? a {zzz} pattern? Keep the last prepareClock string around?).
+								FBInk.fbink_print(self.fbink_fd, "ZzZ", self.fbink_cfg)
+							end
 
 							if bit.band(event.mask, C.IN_CLOSE_WRITE) ~= 0 then
 								logger.dbg("Tripped IN_CLOSE_WRITE for wd %d (config's: %d)",
