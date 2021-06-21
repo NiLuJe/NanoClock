@@ -852,18 +852,18 @@ function NanoClock:waitForEvent()
 					-- If there was a discontinuous clock change, rearm the timer
 					local errno = ffi.errno()
 					if errno == C.ECANCELED then
-						logger.notice("Discontinuous clock change detected, rearming the timer")
+						logger.dbg("Discontinuous clock change detected, rearming the timer")
 						self:rearmTimer()
 					end
+				else
+					self:handleFBInkReinit()
+
+					-- If the config requires it, this will restore the previous, pristine clock background.
+					-- This avoids overlapping text with display modes that skip background pixels.
+					self:restoreClockBackground()
+
+					self:displayClock("clock")
 				end
-
-				self:handleFBInkReinit()
-
-				-- If the config requires it, this will restore the previous, pristine clock background.
-				-- This avoids overlapping text with display modes that skip background pixels.
-				self:restoreClockBackground()
-
-				self:displayClock("clock")
 			end
 
 			if bit.band(self.pfds[0].revents, C.POLLIN) ~= 0 then
