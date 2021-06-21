@@ -50,9 +50,6 @@ local NanoClock = {
 
 	-- State tracking
 	clock_marker = 0,
-	clock_source = C.CLOCK_REALTIME_ALARM,
-	timer_resets = 0,
-	timer_setup_ts = 0,
 	marker_found = false,
 	clock_area = Geom:new{x = 0, y = 0, w = math.huge, h = math.huge},
 	nickel_mtime = 0,
@@ -131,10 +128,10 @@ function NanoClock:initDamage()
 	end
 end
 
-function NanoClock:rearmRealtimeTimer()
+function NanoClock:rearmTimer()
 	-- Arm it to get a tick on every minute, on the dot.
 	local now_ts = ffi.new("struct timespec")
-	C.clock_gettime(C.CLOCK_REALTIME_ALARM, now_ts)
+	C.clock_gettime(C.CLOCK_REALTIME, now_ts)
 	local clock_timer = ffi.new("struct itimerspec")
 	-- Round the current timestamp up to the next multiple of 60 to get us the next minute on the dot.
 	clock_timer.it_value.tv_sec = math.floor((now_ts.tv_sec + 60 - 1) / 60) * 60
@@ -153,87 +150,15 @@ function NanoClock:rearmRealtimeTimer()
 		if errno == C.ECANCELED then
 			-- Harmless, the timer is rearmed properly ;).
 			logger.warn("Caught an unread discontinuous clock change")
-
-			self.timer_resets = self.timer_resets + 1
 		else
 			self:die(string.format("timerfd_settime: %s", ffi.string(C.strerror(errno))))
 		end
 	end
 
-	-- Also log MONOTONIC & BOOTTIME, to see how much fuckery is actually happening...
-	local mono_ts = ffi.new("struct timespec")
-	C.clock_gettime(C.CLOCK_MONOTONIC, mono_ts)
-	local boot_ts = ffi.new("struct timespec")
-	C.clock_gettime(C.CLOCK_BOOTTIME, boot_ts)
-	logger.dbg("Armed REALTIME clock tick timerfd, starting @ %ld (now: %ld.%.9ld [%ld.%.9ld] [%ld.%.9ld])",
+	logger.dbg("Armed clock tick timerfd, starting @ %ld (now: %ld.%.9ld)",
 	           ffi.cast("time_t", clock_timer.it_value.tv_sec),
 	           ffi.cast("time_t", now_ts.tv_sec),
-	           ffi.cast("long int", now_ts.tv_nsec),
-	           ffi.cast("time_t", mono_ts.tv_sec),
-	           ffi.cast("long int", mono_ts.tv_nsec),
-	           ffi.cast("time_t", boot_ts.tv_sec),
-	           ffi.cast("long int", boot_ts.tv_nsec))
-end
-
-function NanoClock:rearmMonotonicTimer()
-	-- If the REALTIME clock is drifting like mad, we switch to MONOTONIC after a while.
-	local mono_ts = ffi.new("struct timespec")
-	C.clock_gettime(C.CLOCK_MONOTONIC, mono_ts)
-	local now_ts = ffi.new("struct timespec")
-	C.clock_gettime(C.CLOCK_REALTIME_ALARM, now_ts)
-	local clock_timer = ffi.new("struct itimerspec")
-	-- Try to start ticking closer to the next REALTIME minute.
-	-- Not accurate, because we don't account for nanoseconds, and REALTIME is drifting anyway,
-	-- so we'll have to settle for +/- 1s ;).
-	clock_timer.it_value.tv_sec = (math.floor((now_ts.tv_sec + 60 - 1) / 60) * 60) - now_ts.tv_sec
-	clock_timer.it_value.tv_nsec = 0
-	-- Tick every minute
-	clock_timer.it_interval.tv_sec = 60
-	clock_timer.it_interval.tv_nsec = 0
-	if C.timerfd_settime(self.clock_fd, 0, clock_timer, nil) == -1 then
-		local errno = ffi.errno()
-		self:die(string.format("timerfd_settime: %s", ffi.string(C.strerror(errno))))
-	end
-
-	-- Also log REALTIME & BOOTTIME, to see how much fuckery is actually happening...
-	local boot_ts = ffi.new("struct timespec")
-	C.clock_gettime(C.CLOCK_BOOTTIME, boot_ts)
-	logger.dbg("Armed MONOTONIC clock tick timerfd, starting in %ld sec (now: %ld.%.9ld [%ld.%.9ld] [%ld.%.9ld])",
-	           ffi.cast("time_t", clock_timer.it_value.tv_sec),
-	           ffi.cast("time_t", now_ts.tv_sec),
-	           ffi.cast("long int", now_ts.tv_nsec),
-	           ffi.cast("time_t", mono_ts.tv_sec),
-	           ffi.cast("long int", mono_ts.tv_nsec),
-	           ffi.cast("time_t", boot_ts.tv_sec),
-	           ffi.cast("long int", boot_ts.tv_nsec))
-end
-
-function NanoClock:rearmTimer()
-	-- Check how much time it's been since the timer creation/last timer reset...
-	local mono_ts = ffi.new("struct timespec")
-	C.clock_gettime(C.CLOCK_MONOTONIC, mono_ts)
-	-- If it's been more than two minutes, reset the counter
-	if mono_ts.tv_sec - self.timer_setup_ts > 120 then
-		self.timer_setup_ts = mono_ts.tv_sec
-		logger.dbg("Resetting timer reset counter (was: %d)", ffi.cast("int", self.timer_resets))
-		self.timer_resets = 0
-	end
-
-	-- If we've gone through a few too many discontinuous clock changes in a short period, switch to MONOTONIC
-	if self.timer_resets > 5 then
-		logger.notice("Too many discontinuous clock changes in the last two minutes, switching to a MONOTONIC timer")
-		self.clock_source = C.CLOCK_MONOTONIC
-
-		self:disarmTimer()
-		self:armTimer()
-	else
-		-- Otherwise, just rearm the current one.
-		if self.clock_source == C.CLOCK_MONOTONIC then
-			self:rearmMonotonicTimer()
-		else
-			self:rearmRealtimeTimer()
-		end
-	end
+	           ffi.cast("long int", now_ts.tv_nsec))
 end
 
 function NanoClock:armTimer()
@@ -241,23 +166,13 @@ function NanoClock:armTimer()
 		return
 	end
 
-	self.clock_fd = C.timerfd_create(self.clock_source, bit.bor(C.TFD_NONBLOCK, C.TFD_CLOEXEC))
+	self.clock_fd = C.timerfd_create(C.CLOCK_REALTIME, bit.bor(C.TFD_NONBLOCK, C.TFD_CLOEXEC))
 	if self.clock_fd == -1 then
 		local errno = ffi.errno()
 		self:die(string.format("timerfd_create: %s", ffi.string(C.strerror(errno))))
 	end
 
-	-- Reset the timer reset counter, and remember the current timestamp
-	self.timer_resets = 0
-	local mono_ts = ffi.new("struct timespec")
-	C.clock_gettime(C.CLOCK_MONOTONIC, mono_ts)
-	self.timer_setup_ts = mono_ts.tv_sec
-
-	if self.clock_source == C.CLOCK_MONOTONIC then
-		self:rearmMonotonicTimer()
-	else
-		self:rearmRealtimeTimer()
-	end
+	self:rearmTimer()
 
 	-- And update the poll table
 	self.pfds[2].fd = self.clock_fd
@@ -573,14 +488,6 @@ function NanoClock:handleConfig()
 
 	-- Toggle timerfd
 	if self.cfg.display.autorefresh then
-		-- If we'd fallen back to a MONOTONIC timer, make sure we rearm it as REALTIME again...
-		-- Nickel does a HCTOSYS at a few key points, and that may jog things into place.
-		if self.clock_source == C.CLOCK_MONOTONIC then
-			logger.notice("Restoring a standard REALTIME timer")
-			self.clock_source = C.CLOCK_REALTIME_ALARM
-			self:disarmTimer()
-		end
-
 		self:armTimer()
 	else
 		self:disarmTimer()
@@ -916,7 +823,6 @@ function NanoClock:waitForEvent()
 					local errno = ffi.errno()
 					if errno == C.ECANCELED then
 						logger.notice("Discontinuous clock change detected, rearming the timer")
-						self.timer_resets = self.timer_resets + 1
 						self:rearmTimer()
 					end
 
