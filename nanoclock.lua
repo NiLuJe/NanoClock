@@ -200,7 +200,7 @@ function NanoClock:initInotify()
 
 	-- Setup a watch on /sys/power/wakeup_count to try to detect reader standby...
 	self.wakeup_path = "/sys/power/wakeup_count"
-	self.inotify_wd[self.wakeup_path] = C.inotify_add_watch(self.inotify_fd, self.wakeup_path, C.IN_MODIFY)
+	self.inotify_wd[self.wakeup_path] = C.inotify_add_watch(self.inotify_fd, self.wakeup_path, C.IN_OPEN)
 	if self.inotify_wd[self.wakeup_path] == -1 then
 		-- Non-fatal
 		local errno = ffi.errno()
@@ -778,18 +778,21 @@ function NanoClock:waitForEvent()
 							--       this is where we'd match event.wd against out own mapping in self.inotify_wd
 							--       But we don't, so, always assume event.wd == self.inotify_wd[self.config_path]
 
-							if bit.band(event.mask, C.IN_MODIFY) ~= 0 then
+							if bit.band(event.mask, C.IN_OPEN) ~= 0 then
 								-- Except here, because we only watch for modify on self.wakeup_path ;).
-								logger.dbg("Tripped IN_MODIFY for wd %d (wakeup's: %d)",
+								logger.dbg("Tripped IN_OPEN for wd %d (wakeup's: %d)",
 								           ffi.cast("int", event.wd),
 								           ffi.cast("int", self.inotify_wd[self.wakeup_path]))
 
 								-- PoC, think of something better (color shift? a {zzz} pattern? Keep the last prepareClock string around?).
 								-- Except, well, no, we can't, because it's too late, and the EPDC itself *is* a wakeup source,
 								-- so the very act of displaying something will cancel the suspend...
-								self.fbink_cfg.is_inverted = true
-								self:displayClock("standby")
-								self.fbink_cfg.is_inverted = false
+								if not self.zzz then
+									self.fbink_cfg.is_inverted = true
+									self:displayClock("standby")
+									self.zzz = true
+									self.fbink_cfg.is_inverted = false
+								end
 							end
 
 							if bit.band(event.mask, C.IN_CLOSE_WRITE) ~= 0 then
