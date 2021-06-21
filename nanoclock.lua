@@ -781,7 +781,16 @@ function NanoClock:waitForEvent()
 								           ffi.cast("int", self.inotify_wd[self.wakeup_path]))
 
 								-- PoC, think of something better (color shift? a {zzz} pattern? Keep the last prepareClock string around?).
-								FBInk.fbink_print(self.fbink_fd, "ZzZ", self.fbink_cfg)
+								-- Except, well, no, we can't, because it's too late, and the EPDC itself *is* a wakeup source,
+								-- so the very act of displaying something will cancel the suspend...
+								local pre_wakeup_count = util.readFileAsNumber(self.wakeup_path)
+								self.fbink_cfg.is_inverted = true
+								self:displayClock("standby")
+								self.fbink_cfg.is_inverted = false
+								local post_wakeup_count = util.readFileAsNumber(self.wakeup_path)
+								logger.dbg("Caught reader standby (%u -> %u)",
+								           ffi.cast("unsigned int", pre_wakeup_count),
+								           ffi.cast("unsigned int", post_wakeup_count))
 							end
 
 							if bit.band(event.mask, C.IN_CLOSE_WRITE) ~= 0 then
