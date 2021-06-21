@@ -54,7 +54,6 @@ local NanoClock = {
 	clock_area = Geom:new{x = 0, y = 0, w = math.huge, h = math.huge},
 	nickel_mtime = 0,
 	fl_brightness = -1,
-	can_standby = true,
 
 	-- I18N stuff
 	days_map = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" },
@@ -197,19 +196,6 @@ function NanoClock:initInotify()
 	if self.inotify_fd == -1 then
 		local errno = ffi.errno()
 		self:die(string.format("inotify_init1: %s", ffi.string(C.strerror(errno))))
-	end
-
-	-- Setup a watch on /sys/power/wakeup_count to try to detect reader standby...
-	self.wakeup_path = "/sys/power/wakeup_count"
-	self.inotify_wd[self.wakeup_path] = C.inotify_add_watch(self.inotify_fd, self.wakeup_path, C.IN_MODIFY)
-	if self.inotify_wd[self.wakeup_path] == -1 then
-		-- Non-fatal
-		local errno = ffi.errno()
-		logger.warn("inotify_add_watch on %s: %s", self.wakeup_path, C.strerror(errno))
-	else
-		logger.dbg("Setup an inotify watch @ wd %d for `%s`",
-		           ffi.cast("int", self.inotify_wd[self.wakeup_path]),
-		           self.wakeup_path)
 	end
 end
 
@@ -779,25 +765,6 @@ function NanoClock:waitForEvent()
 							--       this is where we'd match event.wd against out own mapping in self.inotify_wd
 							--       But we don't, so, always assume event.wd == self.inotify_wd[self.config_path]
 
-							if bit.band(event.mask, C.IN_MODIFY) ~= 0 then
-								-- Except here, because we only watch for modify on self.wakeup_path ;).
-								logger.dbg("Tripped IN_MODIFY for wd %d (wakeup's: %d)",
-								           ffi.cast("int", event.wd),
-								           ffi.cast("int", self.inotify_wd[self.wakeup_path]))
-
-								-- PoC, think of something better (color shift? a {zzz} pattern? Keep the last prepareClock string around?).
-								-- Except, well, no, we can't, because it's too late, and the EPDC itself *is* a wakeup source,
-								-- so the very act of displaying something will cancel the suspend...
-								if self.can_standby then
-									self.fbink_cfg.is_inverted = true
-									self:displayClock("standby")
-									self.fbink_cfg.is_inverted = false
-
-									-- Wait until the next true damage event to do that again.
-									self.can_standby = false
-								end
-							end
-
 							if bit.band(event.mask, C.IN_CLOSE_WRITE) ~= 0 then
 								logger.dbg("Tripped IN_CLOSE_WRITE for wd %d (config's: %d)",
 								           ffi.cast("int", event.wd),
@@ -936,10 +903,6 @@ function NanoClock:waitForEvent()
 							-- Go though *every* damage event in the queue, and check the ones
 							-- subsequent to our previous clock update to see if they touched it...
 							if self.marker_found and damage.data.update_marker ~= self.clock_marker then
-								-- We've caught a new damage event since our clock, assuming that's a page turn,
-								-- and as such, that the reader is now free to go into standby again...
-								self.can_standby = true
-
 								-- We need to handle potential changes in the framebuffer format/layout,
 								-- because that could mean that the clock area we remember may now be stale...
 								self:handleFBInkReinit()
