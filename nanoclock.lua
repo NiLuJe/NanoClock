@@ -52,6 +52,7 @@ local NanoClock = {
 	clock_marker = 0,
 	clock_source = C.CLOCK_REALTIME,
 	timer_resets = 0,
+	timer_setup_ts = 0,
 	marker_found = false,
 	clock_area = Geom:new{x = 0, y = 0, w = math.huge, h = math.huge},
 	nickel_mtime = 0,
@@ -196,10 +197,20 @@ function NanoClock:rearmMonotonicTimer()
 end
 
 function NanoClock:rearmTimer()
-	-- If we've gone through a few too many discontinuous clock changes, switch to MONOTONIC
-	if self.timer_resets > 5 then
-		self.clock_source = C.CLOCK_MONOTONIC
+	-- Check how much time it's been since the timer creation/last timer reset...
+	local mono_ts = ffi.new("struct timespec")
+	C.clock_gettime(C.CLOCK_MONOTONIC, mono_ts)
+	-- If it's been more than two minutes, reset the counter
+	if mono_ts.tv_sec - self.timer_setup_ts > 120 then
+		self.timer_setup_ts = mono_ts.tv_sec
 		self.timer_resets = 0
+		logger.dbg("Resetting timer reset counter (was: %d)", ffi.cast("int", self.timer_resets))
+	end
+
+	-- If we've gone through a few too many discontinuous clock changes in a short period, switch to MONOTONIC
+	if self.timer_resets > 5 then
+		logger.notice("Too many discontinuous clock changes in the last two minutes, switching to a MONOTONIC timer")
+		self.clock_source = C.CLOCK_MONOTONIC
 
 		self:disarmTimer()
 		self:armTimer()
@@ -223,6 +234,12 @@ function NanoClock:armTimer()
 		local errno = ffi.errno()
 		self:die(string.format("timerfd_create: %s", ffi.string(C.strerror(errno))))
 	end
+
+	-- Reset the timer reset counter, and remember the current timestamp
+	self.timer_resets = 0
+	local mono_ts = ffi.new("struct timespec")
+	C.clock_gettime(C.CLOCK_MONOTONIC, mono_ts)
+	self.timer_setup_ts = mono_ts.tv_sec
 
 	if self.clock_source == C.CLOCK_MONOTONIC then
 		self:rearmMonotonicTimer()
@@ -546,9 +563,8 @@ function NanoClock:handleConfig()
 	if self.cfg.display.autorefresh then
 		-- If we'd fallen back to a MONOTONIC timer, make sure we rearm it as REALTIME again...
 		if self.clock_source == C.CLOCK_MONOTONIC then
+			logger.notice("Restoring a standard REALTIME timer")
 			self.clock_source = C.CLOCK_REALTIME
-			self.timer_resets = 0
-
 			self:disarmTimer()
 		end
 
