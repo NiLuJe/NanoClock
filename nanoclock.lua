@@ -50,7 +50,7 @@ local NanoClock = {
 
 	-- State tracking
 	clock_marker = 0,
-	clock_source = C.CLOCK_REALTIME,
+	clock_source = C.CLOCK_REALTIME_ALARM,
 	timer_resets = 0,
 	timer_setup_ts = 0,
 	marker_found = false,
@@ -134,7 +134,7 @@ end
 function NanoClock:rearmRealtimeTimer()
 	-- Arm it to get a tick on every minute, on the dot.
 	local now_ts = ffi.new("struct timespec")
-	C.clock_gettime(C.CLOCK_REALTIME, now_ts)
+	C.clock_gettime(C.CLOCK_REALTIME_ALARM, now_ts)
 	local clock_timer = ffi.new("struct itimerspec")
 	-- Round the current timestamp up to the next multiple of 60 to get us the next minute on the dot.
 	clock_timer.it_value.tv_sec = math.floor((now_ts.tv_sec + 60 - 1) / 60) * 60
@@ -180,7 +180,7 @@ function NanoClock:rearmMonotonicTimer()
 	local mono_ts = ffi.new("struct timespec")
 	C.clock_gettime(C.CLOCK_MONOTONIC, mono_ts)
 	local now_ts = ffi.new("struct timespec")
-	C.clock_gettime(C.CLOCK_REALTIME, now_ts)
+	C.clock_gettime(C.CLOCK_REALTIME_ALARM, now_ts)
 	local clock_timer = ffi.new("struct itimerspec")
 	-- Try to start ticking closer to the next REALTIME minute.
 	-- Not accurate, because we don't account for nanoseconds, and REALTIME is drifting anyway,
@@ -577,7 +577,7 @@ function NanoClock:handleConfig()
 		-- Nickel does a HCTOSYS at a few key points, and that may jog things into place.
 		if self.clock_source == C.CLOCK_MONOTONIC then
 			logger.notice("Restoring a standard REALTIME timer")
-			self.clock_source = C.CLOCK_REALTIME
+			self.clock_source = C.CLOCK_REALTIME_ALARM
 			self:disarmTimer()
 		end
 

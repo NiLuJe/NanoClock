@@ -1,6 +1,7 @@
 local ffi = require("ffi")
 
 ffi.cdef[[
+static const int EPERM = 1;
 static const int ENOENT = 2;
 static const int EINTR = 4;
 static const int ETIME = 62;
@@ -111,6 +112,8 @@ static const int CLOCK_MONOTONIC = 1;
 static const int CLOCK_MONOTONIC_COARSE = 6;
 static const int CLOCK_MONOTONIC_RAW = 4;
 static const int CLOCK_BOOTTIME = 7;
+static const int CLOCK_REALTIME_ALARM = 8;
+static const int CLOCK_BOOTTIME_ALARM = 9;
 static const int CLOCK_TAI = 11;
 typedef long int time_t;
 struct timespec {
