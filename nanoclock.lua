@@ -54,6 +54,7 @@ local NanoClock = {
 	clock_area = Geom:new{x = 0, y = 0, w = math.huge, h = math.huge},
 	nickel_mtime = 0,
 	fl_brightness = -1,
+	can_standby = true,
 
 	-- I18N stuff
 	days_map = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" },
@@ -787,11 +788,13 @@ function NanoClock:waitForEvent()
 								-- PoC, think of something better (color shift? a {zzz} pattern? Keep the last prepareClock string around?).
 								-- Except, well, no, we can't, because it's too late, and the EPDC itself *is* a wakeup source,
 								-- so the very act of displaying something will cancel the suspend...
-								if not self.zzz then
+								if self.can_standby then
 									self.fbink_cfg.is_inverted = true
 									self:displayClock("standby")
-									self.zzz = true
 									self.fbink_cfg.is_inverted = false
+
+									-- Wait until the next true damage event to do that again.
+									self.can_standby = false
 								end
 							end
 
@@ -900,6 +903,7 @@ function NanoClock:waitForEvent()
 							-- because that'd result in a neat infinite loop ;).
 							if damage.data.update_marker == self.clock_marker then
 								self.marker_found = true
+								self.can_standby = true
 							end
 
 							-- If there was an overflow, we may *never* find our previous clock marker,
@@ -930,6 +934,10 @@ function NanoClock:waitForEvent()
 							-- Go though *every* damage event in the queue, and check the ones
 							-- subsequent to our previous clock update to see if they touched it...
 							if self.marker_found and damage.data.update_marker ~= self.clock_marker then
+								-- We've caught a new damage event since our clock, assuming that's a page turn,
+								-- and as such, the reader is now free to go into standby again...
+								self.can_standby = true
+
 								-- We need to handle potential changes in the framebuffer format/layout,
 								-- because that could mean that the clock area we remember may now be stale...
 								self:handleFBInkReinit()
