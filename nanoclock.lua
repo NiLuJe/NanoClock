@@ -201,7 +201,7 @@ function NanoClock:initInotify()
 
 	-- Setup a watch on /sys/power/wakeup_count to try to detect reader standby...
 	self.wakeup_path = "/sys/power/wakeup_count"
-	self.inotify_wd[self.wakeup_path] = C.inotify_add_watch(self.inotify_fd, self.wakeup_path, C.IN_OPEN)
+	self.inotify_wd[self.wakeup_path] = C.inotify_add_watch(self.inotify_fd, self.wakeup_path, C.IN_MODIFY)
 	if self.inotify_wd[self.wakeup_path] == -1 then
 		-- Non-fatal
 		local errno = ffi.errno()
@@ -779,9 +779,9 @@ function NanoClock:waitForEvent()
 							--       this is where we'd match event.wd against out own mapping in self.inotify_wd
 							--       But we don't, so, always assume event.wd == self.inotify_wd[self.config_path]
 
-							if bit.band(event.mask, C.IN_OPEN) ~= 0 then
+							if bit.band(event.mask, C.IN_MODIFY) ~= 0 then
 								-- Except here, because we only watch for modify on self.wakeup_path ;).
-								logger.dbg("Tripped IN_OPEN for wd %d (wakeup's: %d)",
+								logger.dbg("Tripped IN_MODIFY for wd %d (wakeup's: %d)",
 								           ffi.cast("int", event.wd),
 								           ffi.cast("int", self.inotify_wd[self.wakeup_path]))
 
@@ -934,7 +934,7 @@ function NanoClock:waitForEvent()
 							-- subsequent to our previous clock update to see if they touched it...
 							if self.marker_found and damage.data.update_marker ~= self.clock_marker then
 								-- We've caught a new damage event since our clock, assuming that's a page turn,
-								-- and as such, the reader is now free to go into standby again...
+								-- and as such, that the reader is now free to go into standby again...
 								self.can_standby = true
 
 								-- We need to handle potential changes in the framebuffer format/layout,
