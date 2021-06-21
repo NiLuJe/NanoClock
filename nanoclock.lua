@@ -160,15 +160,19 @@ function NanoClock:rearmRealtimeTimer()
 		end
 	end
 
-	-- Also log MONOTONIC, to see how much fuckery is actually happening...
+	-- Also log MONOTONIC & BOOTTIME, to see how much fuckery is actually happening...
 	local mono_ts = ffi.new("struct timespec")
 	C.clock_gettime(C.CLOCK_MONOTONIC, mono_ts)
-	logger.dbg("Armed REALTIME clock tick timerfd, starting @ %ld (now: %ld.%.9ld [%ld.%.9ld])",
+	local boot_ts = ffi.new("struct timespec")
+	C.clock_gettime(C.CLOCK_BOOTTIME, boot_ts)
+	logger.dbg("Armed REALTIME clock tick timerfd, starting @ %ld (now: %ld.%.9ld [%ld.%.9ld] [%ld.%.9ld])",
 	           ffi.cast("time_t", clock_timer.it_value.tv_sec),
 	           ffi.cast("time_t", now_ts.tv_sec),
 	           ffi.cast("long int", now_ts.tv_nsec),
 	           ffi.cast("time_t", mono_ts.tv_sec),
-	           ffi.cast("long int", mono_ts.tv_nsec))
+	           ffi.cast("long int", mono_ts.tv_nsec),
+	           ffi.cast("time_t", boot_ts.tv_sec),
+	           ffi.cast("long int", boot_ts.tv_nsec))
 end
 
 function NanoClock:rearmMonotonicTimer()
@@ -191,13 +195,17 @@ function NanoClock:rearmMonotonicTimer()
 		self:die(string.format("timerfd_settime: %s", ffi.string(C.strerror(errno))))
 	end
 
-	-- Also log REALTIME, to see how much fuckery is actually happening...
-	logger.dbg("Armed MONOTONIC clock tick timerfd, starting in %ld sec (now: %ld.%.9ld [%ld.%.9ld])",
+	-- Also log REALTIME & BOOTTIME, to see how much fuckery is actually happening...
+	local boot_ts = ffi.new("struct timespec")
+	C.clock_gettime(C.CLOCK_BOOTTIME, boot_ts)
+	logger.dbg("Armed MONOTONIC clock tick timerfd, starting in %ld sec (now: %ld.%.9ld [%ld.%.9ld] [%ld.%.9ld])",
 	           ffi.cast("time_t", clock_timer.it_value.tv_sec),
 	           ffi.cast("time_t", now_ts.tv_sec),
 	           ffi.cast("long int", now_ts.tv_nsec),
 	           ffi.cast("time_t", mono_ts.tv_sec),
-	           ffi.cast("long int", mono_ts.tv_nsec))
+	           ffi.cast("long int", mono_ts.tv_nsec),
+	           ffi.cast("time_t", boot_ts.tv_sec),
+	           ffi.cast("long int", boot_ts.tv_nsec))
 end
 
 function NanoClock:rearmTimer()
