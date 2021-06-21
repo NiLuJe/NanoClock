@@ -207,8 +207,8 @@ function NanoClock:rearmTimer()
 	-- If it's been more than two minutes, reset the counter
 	if mono_ts.tv_sec - self.timer_setup_ts > 120 then
 		self.timer_setup_ts = mono_ts.tv_sec
-		self.timer_resets = 0
 		logger.dbg("Resetting timer reset counter (was: %d)", ffi.cast("int", self.timer_resets))
+		self.timer_resets = 0
 	end
 
 	-- If we've gone through a few too many discontinuous clock changes in a short period, switch to MONOTONIC
