@@ -205,6 +205,10 @@ function NanoClock:initInotify()
 		-- Non-fatal
 		local errno = ffi.errno()
 		logger.warn("inotify_add_watch on %s: %s", self.wakeup_path, C.strerror(errno))
+	else
+		logger.dbg("Setup an inotify watch @ wd %d for `%s`",
+		           ffi.cast("int", self.inotify_wd[self.wakeup_path]),
+		           self.wakeup_path)
 	end
 end
 
