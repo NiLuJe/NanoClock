@@ -250,6 +250,8 @@ function NanoClock:initConfig()
 	-- NOTE: An empty value means the key doesn't make it to the table,
 	--       but we actually want an empty string by default here...
 	self.defaults.display.battery_hidden_pattern = ""
+	-- This is unset by default, but effectively defaults to format
+	self.defaults.display.truetype_format = self.defaults.display.format
 
 	-- Then the user config...
 	self.cfg = INIFile.parse(self.config_path)
