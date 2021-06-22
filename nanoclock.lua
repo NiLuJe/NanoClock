@@ -137,8 +137,11 @@ function NanoClock:rearmTimer()
 	-- NOTE: On devices with an autostandby feature, move that to :02 instead of :00 to avoid bad interactions
 	--       with Nickel's own clock refreshes, which are setup for :01 via an rtc wake alarm...
 	--       c.f., https://www.mobileread.com/forums/showpost.php?p=4132552&postcount=53
-	local offset = self.device_platform >= 7 and 2 or 0
-	clock_timer.it_value.tv_sec = math.floor((now_ts.tv_sec + 60 - 1) / 60) * 60 + offset
+	if self.device_platform >= 7 then
+		clock_timer.it_value.tv_sec = math.floor((now_ts.tv_sec + 62 - 1) / 62) * 62
+	else
+		clock_timer.it_value.tv_sec = math.floor((now_ts.tv_sec + 60 - 1) / 60) * 60
+	end
 	clock_timer.it_value.tv_nsec = 0
 	-- Tick every minute
 	clock_timer.it_interval.tv_sec = 60
