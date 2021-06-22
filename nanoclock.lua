@@ -134,7 +134,11 @@ function NanoClock:rearmTimer()
 	C.clock_gettime(C.CLOCK_REALTIME, now_ts)
 	local clock_timer = ffi.new("struct itimerspec")
 	-- Round the current timestamp up to the next multiple of 60 to get us the next minute on the dot.
-	clock_timer.it_value.tv_sec = math.floor((now_ts.tv_sec + 60 - 1) / 60) * 60
+	-- NOTE: On devices with an autostandby feature, move that to :02 instead of :00 to avoid bad interactions
+	--       with Nickel's own clock refreshes, which are setup for :01 via an rtc wake alarm...
+	--       c.f., https://www.mobileread.com/forums/showpost.php?p=4132552&postcount=53
+	local offset = self.device_platform >= 7 and 2 or 0
+	clock_timer.it_value.tv_sec = math.floor((now_ts.tv_sec + 60 - 1) / 60) * 60 + offset
 	clock_timer.it_value.tv_nsec = 0
 	-- Tick every minute
 	clock_timer.it_interval.tv_sec = 60
