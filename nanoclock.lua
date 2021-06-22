@@ -138,7 +138,11 @@ function NanoClock:rearmTimer()
 	--       with Nickel's own clock refreshes, which are setup for :01 via an rtc wake alarm...
 	--       c.f., https://www.mobileread.com/forums/showpost.php?p=4132552&postcount=53
 	if self.device_platform >= 7 then
-		clock_timer.it_value.tv_sec = math.floor((now_ts.tv_sec + 62 - 1) / 62) * 62
+		-- Round to the *nearest* multiple, and correct if it's in the past...
+		clock_timer.it_value.tv_sec = math.floor((now_ts.tv_sec + 30) / 60) * 60 + 2
+		if clock_timer.it_value.tv_sec < now_ts.tv_sec then
+			clock_timer.it_value.tv_sec = clock_timer.it_value.tv_sec + 60
+		end
 	else
 		clock_timer.it_value.tv_sec = math.floor((now_ts.tv_sec + 60 - 1) / 60) * 60
 	end
