@@ -163,7 +163,7 @@ end
 
 function NanoClock:armTimer()
 	if self.clock_fd ~= -1 then
-		return
+		return false
 	end
 
 	self.clock_fd = C.timerfd_create(C.CLOCK_REALTIME, bit.bor(C.TFD_NONBLOCK, C.TFD_CLOEXEC))
@@ -176,11 +176,13 @@ function NanoClock:armTimer()
 
 	-- And update the poll table
 	self.pfds[2].fd = self.clock_fd
+
+	return true
 end
 
 function NanoClock:disarmTimer()
 	if self.clock_fd == -1 then
-		return
+		return false
 	end
 
 	C.close(self.clock_fd)
@@ -189,6 +191,8 @@ function NanoClock:disarmTimer()
 	self.pfds[2].fd = -1
 
 	logger.dbg("Disarmed clock tick timerfd")
+
+	return true
 end
 
 function NanoClock:initInotify()
@@ -490,7 +494,10 @@ function NanoClock:handleConfig()
 
 	-- Toggle timerfd
 	if self.cfg.display.autorefresh then
-		self:armTimer()
+		if not self:armTimer() then
+			-- Timer is already armed, force a rearming, for good measure...
+			self:rearmTimer()
+		end
 	else
 		self:disarmTimer()
 	end
