@@ -144,7 +144,7 @@ function NanoClock:rearmTimer()
 			clock_timer.it_value.tv_sec = clock_timer.it_value.tv_sec + 60
 		end
 	else
-		clock_timer.it_value.tv_sec = math.floor((now_ts.tv_sec + 60 - 1) / 60) * 60
+		clock_timer.it_value.tv_sec = math.floor((now_ts.tv_sec + 59) / 60) * 60
 	end
 	clock_timer.it_value.tv_nsec = 0
 	-- Tick every minute
