@@ -265,8 +265,6 @@ function NanoClock:initConfig()
 	-- NOTE: An empty value means the key doesn't make it to the table,
 	--       but we actually want an empty string by default here...
 	self.defaults.display.battery_hidden_pattern = ""
-	-- This is unset by default, but effectively defaults to format
-	self.defaults.display.truetype_format = self.defaults.display.format
 
 	-- Then the user config...
 	self.cfg = INIFile.parse(self.config_path)
@@ -362,13 +360,6 @@ function NanoClock:handleConfig()
 		self.overlap_trick = true
 	else
 		self.overlap_trick = false
-	end
-
-	if self.cfg.display.truetype_format == nil then
-		self.cfg.display.truetype_format = self.cfg.display.format
-	end
-	if self.cfg.display.truetype_padding then
-		self.cfg.display.truetype_format = " " .. self.cfg.display.truetype_format .. " "
 	end
 
 	-- Handle the localization mappings...
