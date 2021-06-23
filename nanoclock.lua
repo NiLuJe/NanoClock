@@ -476,6 +476,20 @@ function NanoClock:handleConfig()
 		self.fbink_cfg.bg_color = fbink_util.BGColor(self.cfg.display.bg_color)
 	end
 
+	-- Effective format string
+	if self.with_ot then
+		if self.cfg.display.truetype_format then
+			self.clock_format = self.cfg.display.truetype_format
+		else
+			self.clock_format = self.cfg.display.format
+		end
+		if self.cfg.display.truetype_padding then
+			self.clock_format = " " .. self.clock_format .. " "
+		end
+	else
+		self.clock_format = self.cfg.display.format
+	end
+
 	-- Fixed cell setup
 	self.fbink_cfg.col = self.cfg.display.column
 	self.fbink_cfg.hoffset = self.cfg.display.offset_x
@@ -584,12 +598,8 @@ function NanoClock:prepareClock()
 		return false
 	end
 
-	-- Run the appropriate user format string through strftime...
-	if self.with_ot then
-		self.clock_string = os.date(self.cfg.display.truetype_format)
-	else
-		self.clock_string = os.date(self.cfg.display.format)
-	end
+	-- Run the user format string through strftime...
+	self.clock_string = os.date(self.clock_format)
 
 	-- Do we have substitutions to handle?
 	if not self.clock_string:find("%b{}") then
