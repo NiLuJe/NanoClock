@@ -755,7 +755,6 @@ function NanoClock:waitForEvent()
 				self:die(string.format("poll: %s", ffi.string(C.strerror(errno))))
 			end
 		elseif poll_num > 0 then
-			local skip_update = false
 			if bit.band(self.pfds[1].revents, C.POLLIN) ~= 0 then
 				local removed = false
 				while true do
@@ -836,6 +835,29 @@ function NanoClock:waitForEvent()
 					-- Wait 150ms, because I/O...
 					C.usleep(150 * 1000)
 					self:setupInotify()
+				end
+			end
+
+			if bit.band(self.pfds[2].revents, C.POLLIN) ~= 0 then
+				-- We don't actually care about the expiration count, so just read to clear the event
+				if C.read(self.clock_fd, exp, ffi.sizeof(exp[0])) == -1 then
+					-- If there was a discontinuous clock change, rearm the timer, and that's it.
+					-- We do *NOT* want to force a clock refresh,
+					-- because this is tripped after each wakeup from standby on Mk. 7,
+					-- and that's essentially after every page turn ;).
+					local errno = ffi.errno()
+					if errno == C.ECANCELED then
+						logger.dbg("Discontinuous clock change detected, rearming the timer")
+						self:rearmTimer()
+					end
+				else
+					self:handleFBInkReinit()
+
+					-- If the config requires it, this will restore the previous, pristine clock background.
+					-- This avoids overlapping text with display modes that skip background pixels.
+					self:restoreClockBackground()
+
+					self:displayClock("clock")
 				end
 			end
 
@@ -946,9 +968,6 @@ function NanoClock:waitForEvent()
 
 									self:displayClock("damage")
 
-									-- Skip subsequent non-damage (i.e., clock tick) updates for that poll call
-									skip_update = true
-
 									need_update = false
 								end
 							end
@@ -957,31 +976,6 @@ function NanoClock:waitForEvent()
 							logger.warn("Invalid damage event (format: %d)!",
 									ffi.cast("int", damage.format))
 						end
-					end
-				end
-			end
-
-			if bit.band(self.pfds[2].revents, C.POLLIN) ~= 0 then
-				-- We don't actually care about the expiration count, so just read to clear the event
-				if C.read(self.clock_fd, exp, ffi.sizeof(exp[0])) == -1 then
-					-- If there was a discontinuous clock change, rearm the timer, and that's it.
-					-- We do *NOT* want to force a clock refresh,
-					-- because this is tripped after each wakeup from standby on Mk. 7,
-					-- and that's essentially after every page turn ;).
-					local errno = ffi.errno()
-					if errno == C.ECANCELED then
-						logger.dbg("Discontinuous clock change detected, rearming the timer")
-						self:rearmTimer()
-					end
-				else
-					self:handleFBInkReinit()
-
-					-- If the config requires it, this will restore the previous, pristine clock background.
-					-- This avoids overlapping text with display modes that skip background pixels.
-					if not skip_update then
-						self:restoreClockBackground()
-
-						self:displayClock("clock")
 					end
 				end
 			end
