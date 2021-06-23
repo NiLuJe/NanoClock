@@ -755,6 +755,7 @@ function NanoClock:waitForEvent()
 				self:die(string.format("poll: %s", ffi.string(C.strerror(errno))))
 			end
 		elseif poll_num > 0 then
+			local skip_update = false
 			if bit.band(self.pfds[1].revents, C.POLLIN) ~= 0 then
 				local removed = false
 				while true do
@@ -797,6 +798,9 @@ function NanoClock:waitForEvent()
 								FBInk.fbink_cls(self.fbink_fd, self.fbink_cfg, self.fbink_last_rect, self.fbink_state.is_ntx_quirky_landscape)
 
 								self:reloadConfig()
+
+								-- Skip subsequent updates for that poll call (reloadConfig calls displayClock)
+								skip_update = true
 							end
 
 							if bit.band(event.mask, C.IN_UNMOUNT) ~= 0 then
@@ -855,9 +859,13 @@ function NanoClock:waitForEvent()
 
 					-- If the config requires it, this will restore the previous, pristine clock background.
 					-- This avoids overlapping text with display modes that skip background pixels.
-					self:restoreClockBackground()
+					if not skip_update then
+						self:restoreClockBackground()
 
-					self:displayClock("clock")
+						self:displayClock("clock")
+
+						skip_update = true
+					end
 				end
 			end
 
@@ -966,7 +974,9 @@ function NanoClock:waitForEvent()
 									-- to be used for autorefresh & backgroundless trickery ;).
 									self:grabClockBackground()
 
-									self:displayClock("damage")
+									if not skip_update then
+										self:displayClock("damage")
+									end
 
 									need_update = false
 								end
