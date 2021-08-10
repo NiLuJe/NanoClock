@@ -938,6 +938,7 @@ function NanoClock:waitForEvent()
 								}
 								if update_area:intersectWith(self.clock_area) then
 									-- We'll need to know if nightmode is currently enabled to do the same...
+									-- FIXME: On sunxi, detect eclipse waveform modes instead...
 									if bit.band(damage.data.flags, C.EPDC_FLAG_ENABLE_INVERSION) ~= 0 then
 										self.fbink_cfg.is_nightmode = true
 									else
