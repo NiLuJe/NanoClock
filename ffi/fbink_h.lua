@@ -101,6 +101,74 @@ typedef enum {
 } __attribute__((packed)) BG_COLOR_INDEX_E;
 typedef uint8_t BG_COLOR_INDEX_T;
 typedef enum {
+  DEVICE_CERVANTES_TOUCH = 22,
+  DEVICE_CERVANTES_TOUCHLIGHT = 23,
+  DEVICE_CERVANTES_2013 = 33,
+  DEVICE_CERVANTES_3 = 51,
+  DEVICE_CERVANTES_4 = 68,
+  DEVICE_CERVANTES_MAX = 65535,
+} __attribute__((packed)) CERVANTES_DEVICE_ID_E;
+typedef enum {
+  DEVICE_KOBO_TOUCH_AB = 310,
+  DEVICE_KOBO_TOUCH_C = 320,
+  DEVICE_KOBO_MINI = 340,
+  DEVICE_KOBO_GLO = 330,
+  DEVICE_KOBO_GLO_HD = 371,
+  DEVICE_KOBO_TOUCH_2 = 372,
+  DEVICE_KOBO_AURA = 360,
+  DEVICE_KOBO_AURA_HD = 350,
+  DEVICE_KOBO_AURA_H2O = 370,
+  DEVICE_KOBO_AURA_H2O_2 = 374,
+  DEVICE_KOBO_AURA_H2O_2_R2 = 378,
+  DEVICE_KOBO_AURA_ONE = 373,
+  DEVICE_KOBO_AURA_ONE_LE = 381,
+  DEVICE_KOBO_AURA_SE = 375,
+  DEVICE_KOBO_AURA_SE_R2 = 379,
+  DEVICE_KOBO_CLARA_HD = 376,
+  DEVICE_KOBO_FORMA = 377,
+  DEVICE_KOBO_FORMA_32GB = 380,
+  DEVICE_KOBO_LIBRA_H2O = 384,
+  DEVICE_KOBO_NIA = 382,
+  DEVICE_KOBO_ELIPSA = 387,
+  DEVICE_KOBO_MAX = 65535,
+} __attribute__((packed)) KOBO_DEVICE_ID_E;
+typedef enum {
+  DEVICE_REMARKABLE_1 = 1,
+  DEVICE_REMARKABLE_2 = 2,
+  DEVICE_REMARKABLE_MAX = 65535,
+} __attribute__((packed)) REMARKABLE_DEVICE_ID_E;
+typedef enum {
+  DEVICE_POCKETBOOK_MINI = 515,
+  DEVICE_POCKETBOOK_606 = 606,
+  DEVICE_POCKETBOOK_611 = 611,
+  DEVICE_POCKETBOOK_613 = 613,
+  DEVICE_POCKETBOOK_614 = 614,
+  DEVICE_POCKETBOOK_615 = 615,
+  DEVICE_POCKETBOOK_616 = 616,
+  DEVICE_POCKETBOOK_TOUCH = 622,
+  DEVICE_POCKETBOOK_LUX = 623,
+  DEVICE_POCKETBOOK_BASIC_TOUCH = 624,
+  DEVICE_POCKETBOOK_BASIC_TOUCH_2 = 625,
+  DEVICE_POCKETBOOK_LUX_3 = 626,
+  DEVICE_POCKETBOOK_LUX_4 = 627,
+  DEVICE_POCKETBOOK_LUX_5 = 628,
+  DEVICE_POCKETBOOK_SENSE = 630,
+  DEVICE_POCKETBOOK_TOUCH_HD = 631,
+  DEVICE_POCKETBOOK_TOUCH_HD_PLUS = 632,
+  DEVICE_POCKETBOOK_COLOR = 633,
+  DEVICE_POCKETBOOK_AQUA = 640,
+  DEVICE_POCKETBOOK_AQUA2 = 641,
+  DEVICE_POCKETBOOK_ULTRA = 650,
+  DEVICE_POCKETBOOK_INKPAD_3 = 740,
+  DEVICE_POCKETBOOK_INKPAD_3_PRO = 742,
+  DEVICE_POCKETBOOK_INKPAD_COLOR = 741,
+  DEVICE_POCKETBOOK_INKPAD = 840,
+  DEVICE_POCKETBOOK_INKPAD_X = 1040,
+  DEVICE_POCKETBOOK_COLOR_LUX = 32637,
+  DEVICE_POCKETBOOK_MAX = 65535,
+} __attribute__((packed)) POCKETBOOK_DEVICE_ID_E;
+typedef uint16_t DEVICE_ID_T;
+typedef enum {
   WFM_AUTO = 0,
   WFM_DU = 1,
   WFM_GC16 = 2,
@@ -123,6 +191,11 @@ typedef enum {
   WFM_A2OUT = 19,
   WFM_GC16HQ = 20,
   WFM_GS16 = 21,
+  WFM_GU16 = 22,
+  WFM_GLK16 = 23,
+  WFM_CLEAR = 24,
+  WFM_GC4L = 25,
+  WFM_GCC16 = 26,
   WFM_MAX = 255,
 } __attribute__((packed)) WFM_MODE_INDEX_E;
 typedef uint8_t WFM_MODE_INDEX_T;
@@ -140,9 +213,25 @@ typedef enum {
   NTX_ROTA_ALL_INVERTED = 1,
   NTX_ROTA_ODD_INVERTED = 2,
   NTX_ROTA_SANE = 3,
+  NTX_ROTA_SUNXI = 4,
   NTX_ROTA_MAX = 255,
 } __attribute__((packed)) NTX_ROTA_INDEX_E;
 typedef uint8_t NTX_ROTA_INDEX_T;
+typedef enum {
+  FORCE_ROTA_NOTSUP = -128,
+  FORCE_ROTA_CURRENT_ROTA = -5,
+  FORCE_ROTA_CURRENT_LAYOUT = -4,
+  FORCE_ROTA_PORTRAIT = -3,
+  FORCE_ROTA_LANDSCAPE = -2,
+  FORCE_ROTA_GYRO = -1,
+  FORCE_ROTA_UR = 0,
+  FORCE_ROTA_CW = 1,
+  FORCE_ROTA_UD = 2,
+  FORCE_ROTA_CCW = 3,
+  FORCE_ROTA_WORKBUF = 4,
+  FORCE_ROTA_MAX = 127,
+} __attribute__((packed)) SUNXI_FORCE_ROTA_INDEX_E;
+typedef int8_t SUNXI_FORCE_ROTA_INDEX_T;
 typedef struct {
   long int user_hz;
   const char *restrict font_name;
@@ -150,11 +239,12 @@ typedef struct {
   uint32_t view_height;
   uint32_t screen_width;
   uint32_t screen_height;
+  uint32_t scanline_stride;
   uint32_t bpp;
   char device_name[16];
   char device_codename[16];
   char device_platform[16];
-  short unsigned int device_id;
+  DEVICE_ID_T device_id;
   uint8_t pen_fg_color;
   uint8_t pen_bg_color;
   short unsigned int screen_dpi;
@@ -170,6 +260,8 @@ typedef struct {
   uint8_t glyph_height;
   bool is_perfect_fit;
   bool is_sunxi;
+  bool sunxi_has_fbdamage;
+  SUNXI_FORCE_ROTA_INDEX_T sunxi_force_rota;
   bool is_kindle_legacy;
   bool is_kobo_non_mt;
   uint8_t ntx_boot_rota;
@@ -296,4 +388,14 @@ int fbink_button_scan(int, bool, bool);
 int fbink_wait_for_usbms_processing(int, bool);
 uint8_t fbink_rota_native_to_canonical(uint32_t);
 uint32_t fbink_rota_canonical_to_native(uint8_t);
+int fbink_invert_screen(int, const FBInkConfig *restrict);
+unsigned char *fbink_get_fb_pointer(int, size_t *);
+void fbink_get_fb_info(struct fb_var_screeninfo *, struct fb_fix_screeninfo *);
+static const int KEEP_CURRENT_ROTATE = 128;
+static const int KEEP_CURRENT_BITDEPTH = 128;
+static const int KEEP_CURRENT_GRAYSCALE = 128;
+static const int TOGGLE_GRAYSCALE = 64;
+int fbink_set_fb_info(int, uint32_t, uint8_t, uint8_t, const FBInkConfig *restrict);
+int fbink_toggle_sunxi_ntx_pen_mode(int, bool);
+int fbink_sunxi_ntx_enforce_rota(int, SUNXI_FORCE_ROTA_INDEX_T, const FBInkConfig *restrict);
 ]]
