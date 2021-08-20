@@ -69,6 +69,7 @@ LFS_SRCS:=luafilesystem/src/lfs.c
 #       * mk6/mx6sl-ntx is built from the Glo HD kernel (https://github.com/kobolabs/Kobo-Reader/tree/master/hw/imx6sl-glohd)
 #       * mk7/mx6sll-ntx is built from the Forma kernel (https://github.com/kobolabs/Kobo-Reader/tree/master/hw/imx6sll-forma)
 #       * mk7/mx6ull-ntx is built from the Nia kernel (https://github.com/kobolabs/Kobo-Reader/tree/master/hw/imx6ull-nia) (Binary identical to mk7/mx6sll-ntx, which makes sense)
+#       * mk8/b300-ntx is built from the Elipsa kernel (https://github.com/kobolabs/b300-elipsa)
 
 default: all
 
@@ -121,7 +122,7 @@ clean:
 fbink.built: | outdir
 	# Minimal CLI first
 	cd FBInk && \
-	$(MAKE) strip KOBO=true MINIMAL=true
+	$(MAKE) strip KOBO=true MINIMAL=true BITMAP=true
 	cp -av FBInk/Release/fbink $(OUT_DIR)/fbink
 
 	# Then our shared library
