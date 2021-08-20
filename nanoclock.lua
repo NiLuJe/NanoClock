@@ -15,6 +15,7 @@ local C = ffi.C
 
 require("ffi/fbink_h")
 require("ffi/mxcfb_h")
+require("ffi/sunxi_h")
 require("ffi/mxcfb_damage_h")
 require("ffi/posix_h")
 
