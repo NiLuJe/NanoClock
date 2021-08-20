@@ -6,6 +6,7 @@ typedef enum {
   DAMAGE_UPDATE_DATA_V1_NTX = 1,
   DAMAGE_UPDATE_DATA_V1 = 2,
   DAMAGE_UPDATE_DATA_V2 = 3,
+  DAMAGE_UPDATE_DATA_SUNXI_KOBO_DISP2 = 4,
   DAMAGE_UPDATE_DATA_ERROR = 255,
 } mxcfb_damage_data_format;
 typedef struct {
@@ -31,6 +32,8 @@ typedef struct {
   int dither_mode;
   int quant_bit;
   mxcfb_damage_alt_data alt_buffer_data;
+  uint32_t rotate;
+  bool pen_mode;
 } mxcfb_damage_data;
 typedef struct {
   int overflow_notify;
