@@ -370,11 +370,15 @@ function NanoClock:handleNickelConfig()
 			if nickel.FeatureSettings.InvertScreen then
 				self.invert_screen = nickel.FeatureSettings.InvertScreen
 				logger.notice("Nickel InvertScreen=%s", tostring(self.invert_screen))
+			else
+				self.invert_screen = false
 			end
 
 			if nickel.FeatureSettings.DarkMode then
 				self.dark_mode = nickel.FeatureSettings.DarkMode
 				logger.notice("Nickel DarkMode=%s", tostring(self.dark_mode))
+			else
+				self.dark_mode = false
 			end
 
 			-- NOTE: Because of course, everything is terrible, on FW 4.28+,
