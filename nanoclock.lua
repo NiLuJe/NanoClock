@@ -485,6 +485,37 @@ function NanoClock:handleConfig()
 		self.fbink_cfg.bg_color = fbink_util.BGColor(self.cfg.display.bg_color)
 	end
 
+	-- Select an appropriate waveform mode, depending on the pen colors being used...
+	if self.with_ot then
+		-- There's always going to be AA to contend with...
+		if self.fbink_state.is_sunxi then
+			self.fbink_cfg.wfm_mode = C.WFM_GL16
+		else
+			-- NOTE: Possibly GL16 here too, or even REAGL on Mk. 7?
+			self.fbink_cfg.wfm_mode = C.WFM_AUTO
+		end
+	else
+		if self.fbink_cfg.is_overlay or self.fbink_cfg.is_bgless then
+			-- We don't control what's below us, so, stay conservative...
+			if self.fbink_state.is_sunxi then
+				self.fbink_cfg.wfm_mode = C.WFM_GL16
+			else
+				self.fbink_cfg.wfm_mode = C.WFM_AUTO
+			end
+		else
+			if (self.fbink_cfg.fg_color == C.FG_BLACK or self.fbink_cfg.fg_color == C.FG_WHITE)
+			and (self.fbink_cfg.bg_color == C.BG_BLACK or self.fbink_cfg.bg_color == C.BG_WHITE) then
+				self.fbink_cfg.wfm_mode = C.WFM_DU
+			else
+				if self.fbink_state.is_sunxi then
+					self.fbink_cfg.wfm_mode = C.WFM_GL16
+				else
+					self.fbink_cfg.wfm_mode = C.WFM_AUTO
+				end
+			end
+		end
+	end
+
 	-- Effective format string
 	if self.with_ot then
 		if self.cfg.display.truetype_format then
