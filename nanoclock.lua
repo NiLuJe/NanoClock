@@ -373,38 +373,44 @@ function NanoClock:handleNickelConfig()
 			else
 				self.invert_screen = false
 			end
+		else
+			self.invert_screen = false
+		end
 
-			if nickel.FeatureSettings.DarkMode ~= nil then
-				self.dark_mode = nickel.FeatureSettings.DarkMode
+		if nickel.ReadingSettings then
+			if nickel.ReadingSettings.DarkMode ~= nil then
+				self.dark_mode = nickel.ReadingSettings.DarkMode
 				logger.notice("Nickel DarkMode=%s", tostring(self.dark_mode))
 			else
 				self.dark_mode = false
 			end
+		else
+			self.dark_mode = false
+		end
 
-			-- NOTE: Because of course, everything is terrible, on FW 4.28+,
-			--       invert screen no longer relies on HW inversion on mxcfb...
-			--       So, to avoid breaking the HW inversion detection on older FW,
-			--       conflate InvertScreen w/ DarkMode on FW 4.28+...
-			if self.invert_screen and self.fw_version >= self.fw_428 then
-				self.dark_mode = self.invert_screen
-				logger.notice("FW 4.28+: Conflating InvertScreen with DarkMode!")
+		-- NOTE: Because of course, everything is terrible, on FW 4.28+,
+		--       invert screen no longer relies on HW inversion on mxcfb...
+		--       So, to avoid breaking the HW inversion detection on older FW,
+		--       conflate InvertScreen w/ DarkMode on FW 4.28+...
+		if self.invert_screen and self.fw_version >= self.fw_428 then
+			self.dark_mode = self.invert_screen
+			logger.notice("FW 4.28+: Conflating InvertScreen with DarkMode!")
+		end
+
+		-- NOTE: On devices without eclipse waveform modes,
+		--       we don't really have a way of knowing *when* we'd actually
+		--       be displaying on top of inverted content, so,
+		--       there's a strong possibility of false positives here...
+		-- Thankfully, the feature isn't public on such devices,
+		-- so you're arguably asking for trouble in the first place ;).
+		if self.dark_mode then
+			if not self.fbink_state.is_sunxi then
+				-- We can't use true night mode anyway, as it would adversely affect bgless & overlay...
+				self.fbink_cfg.is_inverted = true
 			end
-
-			-- NOTE: On devices without eclipse waveform modes,
-			--       we don't really have a way of knowing *when* we'd actually
-			--       be displaying on top of inverted content, so,
-			--       there's a strong possibility of false positives here...
-			-- Thankfully, the feature isn't public on such devices,
-			-- so you're arguably asking for trouble in the first place ;).
-			if self.dark_mode then
-				if not self.fbink_state.is_sunxi then
-					-- We can't use true night mode anyway, as it would adversely affect bgless & overlay...
-					self.fbink_cfg.is_inverted = true
-				end
-			else
-				if not self.fbink_state.is_sunxi then
-					self.fbink_cfg.is_inverted = false
-				end
+		else
+			if not self.fbink_state.is_sunxi then
+				self.fbink_cfg.is_inverted = false
 			end
 		end
 	end
