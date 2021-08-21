@@ -92,6 +92,9 @@ function NanoClock:init()
 	if self.version == "" then
 		self.version = "vDEV"
 	end
+
+	-- These are the config files we'll watch over via inotify...
+	self.inotify_file_list = { self.config_path, self.nickel_config }
 end
 
 function NanoClock:initFBInk()
@@ -233,39 +236,63 @@ function NanoClock:initInotify()
 end
 
 function NanoClock:setupInotify()
-	-- We're called on each iteration right before poll, in order to recreate the wd after an unmount.
-	-- But in most cases, the wd will be alive and well, so, only proceed if:
-	-- * the watch was never actually created (e.g., first ever poll call)
-	-- * or it was destroyed by an unmount, in which case we try to recreate it
-	if self.inotify_file_map[self.config_path] and self.inotify_file_map[self.config_path] ~= -1 then
+	-- We're called on each iteration right before poll, in order to recreate the wds after an unmount.
+	-- But in most cases, the wds will be alive and well, so, only proceed if:
+	-- * our watches were never actually created (e.g., first ever poll call)
+	-- * or they were destroyed by an unmount, in which case we try to recreate them
+	local watch_count = 0
+	for file, wd in pairs(self.inotify_file_map) do
+		if wd ~= -1 then
+			watch_count = watch_count + 1
+		end
+	end
+	if watch_count == #self.inotify_file_list then
+		-- Every watch is accounted for!
 		return
 	end
 
-	-- If a watch for that file was previously created, that means it's been destroyed by an unmount
-	local was_destroyed = false
-	if self.inotify_file_map[self.config_path] then
-		-- Given the early return check, we know it's going to be set to -1, which is our "destroyed" marker.
-		was_destroyed = true
-	end
-
-	self.inotify_file_map[self.config_path] =
-		C.inotify_add_watch(self.inotify_fd, self.config_path, bit.bor(C.IN_MODIFY, C.IN_CLOSE_WRITE))
-	if self.inotify_file_map[self.config_path] == -1 then
-		local errno = ffi.errno()
-		-- We allow ENOENT as it *will* happen when onboard is unmounted during an USBMS session!
-		-- (Granted, the only damage events we should catch during an USBMS session are ours,
-		-- and the only way that can happen is via timerfd ticks ;)).
-		if errno ~= C.ENOENT then
-			self:die(string.format("inotify_add_watch: %s", ffi.string(C.strerror(errno))))
+	for _, file in ipairs(self.inotify_file_list) do
+		-- If a watch for that file was previously created, that means it's been destroyed by an unmount
+		local was_destroyed = false
+		if self.inotify_file_map[file] and self.inotify_file_map[file] == -1 then
+			was_destroyed = true
 		end
-	else
-		logger.dbg("Setup an inotify watch @ wd %d for `%s`",
-		           ffi.cast("int", self.inotify_file_map[self.config_path]),
-		           self.config_path)
-		-- If we've just recreated the watch after an unmount/remount cycle, force a config reload,
-		-- as it may have been updated outside of our oversight (e.g., USBMS)...
-		if was_destroyed then
-			self:reloadConfig()
+		-- It might also have never been created...
+		local is_new = false
+		if not self.inotify_file_map[file] then
+			is_new = true
+		end
+
+		-- It's unlikely that we'd end up with only *some* of the watches in the list alive,
+		-- but handle this case nonetheless by only creating new or destroyed watches,
+		-- leaving the others unscathed...
+		if was_destroyed or is_new then
+			self.inotify_file_map[file] =
+				C.inotify_add_watch(self.inotify_fd, file, bit.bor(C.IN_MODIFY, C.IN_CLOSE_WRITE))
+			if self.inotify_file_map[file] == -1 then
+				local errno = ffi.errno()
+				-- We allow ENOENT as it *will* happen when onboard is unmounted during an USBMS session!
+				-- (Granted, the only damage events we should catch during an USBMS session are ours,
+				-- and the only way that can happen is via timerfd ticks ;)).
+				if errno ~= C.ENOENT then
+					self:die(string.format("inotify_add_watch: %s", ffi.string(C.strerror(errno))))
+				end
+			else
+				self.inotify_wd_map[self.inotify_file_map[file]] = file
+				logger.dbg("Setup an inotify watch @ wd %d for `%s`",
+					ffi.cast("int", self.inotify_file_map[file]),
+					file)
+				-- If we've just recreated the watch after an unmount/remount cycle, force a config reload,
+				-- as it may have been updated outside of our oversight (e.g., USBMS)...
+				if was_destroyed then
+					if file == self.config_path then
+						self:reloadConfig()
+					elseif file == self.nickel_config then
+						-- TODO
+						--self:reloadNickelConfig()
+					end
+				end
+			end
 		end
 	end
 end
