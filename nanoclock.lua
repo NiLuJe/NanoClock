@@ -356,7 +356,7 @@ function NanoClock:getFWVersion()
 	end
 
 	self.fw_version = util.getNormalizedVersion(nickel_ver)
-	self.fv_version_str = nickel_ver
+	self.fw_version_str = nickel_ver
 end
 
 function NanoClock:handleNickelConfig()
