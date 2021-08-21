@@ -857,30 +857,31 @@ function NanoClock:waitForEvent()
 						while ptr < buf + len do
 							local event = ffi.cast("const struct inotify_event*", ptr)
 
-							-- NOTE: If we happened to watch multiple files with the same mask,
-							--       this is where we'd match event.wd against out own mapping in self.inotify_file_map
-							--       But we don't, so, always assume event.wd == self.inotify_file_map[self.config_path]
-
 							if bit.band(event.mask, C.IN_MODIFY) ~= 0 then
-								logger.dbg("Tripped IN_MODIFY for wd %d (config's: %d)",
-								           ffi.cast("int", event.wd),
-								           ffi.cast("int", self.inotify_file_map[self.config_path]))
+								logger.dbg("Tripped IN_MODIFY for `%s` @ wd %d",
+								           self.inotify_wd_map[event.wd],
+								           ffi.cast("int", event.wd))
 
 								-- Mark that file as dirty, se we can properly reload it on CLOSE_WRITE
 								self.inotify_dirty_wds[event.wd] = true
 							end
 
 							if bit.band(event.mask, C.IN_CLOSE_WRITE) ~= 0 then
-								logger.dbg("Tripped IN_CLOSE_WRITE for wd %d (config's: %d)",
-								           ffi.cast("int", event.wd),
-								           ffi.cast("int", self.inotify_file_map[self.config_path]))
+								logger.dbg("Tripped IN_CLOSE_WRITE for `%s` @ wd %d",
+								           self.inotify_wd_map[event.wd],
+								           ffi.cast("int", event.wd))
 
 								if self.inotify_dirty_wds[event.wd] then
-									-- Blank the previous clock area to avoid overlapping displays.
-									-- We can't optimize the refresh out, as the clock may have moved...
-									FBInk.fbink_cls(self.fbink_fd, self.fbink_cfg, self.fbink_last_rect, self.fbink_state.is_ntx_quirky_landscape)
+									if self.inotify_wd_map[event.wd] == self.config_path then
+										-- Blank the previous clock area to avoid overlapping displays.
+										-- We can't optimize the refresh out, as the clock may have moved...
+										FBInk.fbink_cls(self.fbink_fd, self.fbink_cfg, self.fbink_last_rect, self.fbink_state.is_ntx_quirky_landscape)
 
-									self:reloadConfig()
+										self:reloadConfig()
+									elseif self.inotify_wd_map[event.wd] == self.nickel_config then
+										--TODO
+										--self:reloadNickelConfig()
+									end
 
 									-- Done!
 									self.inotify_dirty_wds[event.wd] = nil
@@ -890,21 +891,23 @@ function NanoClock:waitForEvent()
 							end
 
 							if bit.band(event.mask, C.IN_UNMOUNT) ~= 0 then
-								logger.dbg("Tripped IN_UNMOUNT for wd %d (config's: %d)",
-								           ffi.cast("int", event.wd),
-								           ffi.cast("int", self.inotify_file_map[self.config_path]))
+								logger.dbg("Tripped IN_UNMOUNT for `%s` @ wd %d",
+								           self.inotify_wd_map[event.wd],
+								           ffi.cast("int", event.wd))
 
 								-- Flag the wd as destroyed by the system
-								self.inotify_file_map[self.config_path] = -1
+								self.inotify_file_map[self.inotify_wd_map[event.wd]] = -1
+								self.inotify_wd_map[event.wd] = nil
 							end
 
 							if bit.band(event.mask, C.IN_IGNORED) ~= 0 then
-								logger.dbg("Tripped IN_IGNORED for wd %d (config's: %d)",
-								           ffi.cast("int", event.wd),
-								           ffi.cast("int", self.inotify_file_map[self.config_path]))
+								logger.dbg("Tripped IN_IGNORED for `%s` @ wd %d",
+								           self.inotify_wd_map[event.wd],
+								           ffi.cast("int", event.wd))
 
 								-- Flag the wd as destroyed by the system
-								self.inotify_file_map[self.config_path] = -1
+								self.inotify_file_map[self.inotify_wd_map[event.wd]] = -1
+								self.inotify_wd_map[event.wd] = nil
 								removed = true
 							end
 
