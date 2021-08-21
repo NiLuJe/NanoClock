@@ -55,8 +55,9 @@ local NanoClock = {
 	clock_marker = 0,
 	marker_found = false,
 	clock_area = Geom:new{x = 0, y = 0, w = math.huge, h = math.huge},
-	nickel_mtime = 0,
+	-- From Nickel's config
 	fl_brightness = -1,
+	dark_mode = false,
 
 	-- I18N stuff
 	days_map = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" },
@@ -286,8 +287,7 @@ function NanoClock:setupInotify()
 					if file == self.config_path then
 						self:reloadConfig()
 					elseif file == self.nickel_config then
-						-- TODO
-						--self:reloadNickelConfig()
+						self:reloadNickelConfig()
 					end
 				end
 			end
@@ -319,7 +319,7 @@ function NanoClock:initConfig()
 end
 
 function NanoClock:reloadConfig()
-	logger.notice("Config file was modified, reloading it")
+	logger.notice("NanoCLock's config file was modified, reloading it")
 	-- NOTE: We're only called on inotify events, so we *should* have a guarantee that the file actually exists...
 	self.cfg = INIFile.parse(self.config_path)
 	self:sanitizeConfig()
@@ -329,6 +329,41 @@ function NanoClock:reloadConfig()
 	-- (and also to ease recovering from print failures stemming from config issues).
 	self:handleFBInkReinit()
 	self:displayClock("config")
+end
+
+function NanoClock:reloadNickelConfig()
+	logger.notice("Nickel's config file was modified, reloading it")
+
+	local nickel = INIFile.parse(self.nickel_config)
+	if nickel then
+		if nickel.PowerOptions and nickel.PowerOptions.FrontLightLevel then
+			self.fl_brightness = nickel.PowerOptions.FrontLightLevel
+		end
+
+		if nickel.FeatureSettings and nickel.FeatureSettings.DarkMode then
+			self.dark_mode = nickel.FeatureSettings.DarkMode
+
+			-- NOTE: On devices without eclipse waveform modes,
+			--       we don't really have a way of knowing *when* we'd actually
+			--       be displaying on top of inverted content, so,
+			--       there's a strong possibility of false positives here...
+			-- Thankfully, the feature isn't public on such devices,
+			-- so you're arguably asking for trouble in the first place ;).
+			if self.dark_mode then
+				if self.fbink_state.can_hw_invert then
+					self.fbink_cfg.is_nightmode = true
+				else
+					self.fbink_cfg.is_inverted = true
+				end
+			else
+				if self.fbink_state.can_hw_invert then
+					self.fbink_cfg.is_nightmode = false
+				else
+					self.fbink_cfg.is_inverted = false
+				end
+			end
+		end
+	end
 end
 
 function NanoClock:sanitizeConfig()
@@ -595,31 +630,13 @@ function NanoClock:handleConfig()
 end
 
 function NanoClock:getFrontLightLevel()
-	-- We can poke sysfs directly on Mark 7
-	if self.device_platform == 7 then
+	if self.device_platform >= 7 then
+		-- We can poke sysfs directly on Mark 7+
 		local brightness = util.readFileAsNumber("/sys/class/backlight/mxc_msp430.0/actual_brightness")
 		return string.format(self.cfg.display.frontlight_pattern, brightness)
 	else
-		-- Otherwise, we have to look inside Nickel's config...
-		-- Avoid parsing it again if it hasn't changed.
-		local nickel_mtime = lfs.attributes(self.nickel_config, "modification")
-		if not nickel_mtime then
-			return string.format(self.cfg.display.frontlight_pattern, self.fl_brightness)
-		end
-
-		if nickel_mtime == self.nickel_mtime then
-			return string.format(self.cfg.display.frontlight_pattern, self.fl_brightness)
-		else
-			self.nickel_mtime = nickel_mtime
-		end
-
-		local nickel = INIFile.parse(self.nickel_config)
-		if nickel and nickel.PowerOptions and nickel.PowerOptions.FrontLightLevel then
-			self.fl_brightness = nickel.PowerOptions.FrontLightLevel
-			return string.format(self.cfg.display.frontlight_pattern, self.fl_brightness)
-		else
-			return string.format(self.cfg.display.frontlight_pattern, -1)
-		end
+		-- Otherwise, we have use the value from Nickel's config...
+		return string.format(self.cfg.display.frontlight_pattern, self.fl_brightness)
 	end
 end
 
@@ -879,8 +896,7 @@ function NanoClock:waitForEvent()
 
 										self:reloadConfig()
 									elseif self.inotify_wd_map[event.wd] == self.nickel_config then
-										--TODO
-										--self:reloadNickelConfig()
+										self:reloadNickelConfig()
 									end
 
 									-- Done!
