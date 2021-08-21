@@ -119,6 +119,22 @@ nanoclock: armcheck fbink.built luajit.built lfs
 clean:
 	rm -rf Kobo
 
+ifdef DEBUG
+fbink.built: | outdir
+	# Minimal CLI first
+	cd FBInk && \
+	$(MAKE) strip KOBO=true MINIMAL=true BITMAP=true DEBUG=true
+	cp -av FBInk/Debug/fbink $(OUT_DIR)/fbink
+
+	# Then our shared library
+	cd FBInk && \
+	$(MAKE) distclean
+	cd FBInk && \
+	$(MAKE) shared KOBO=true MINIMAL=true FONTS=true OPENTYPE=true IMAGE=true DEBUG=true
+	cp -av FBInk/Debug/libfbink.so.1.0.0 $(OUT_DIR)/libfbink.so.1.0.0
+
+	touch fbink.built
+else
 fbink.built: | outdir
 	# Minimal CLI first
 	cd FBInk && \
@@ -127,12 +143,13 @@ fbink.built: | outdir
 
 	# Then our shared library
 	cd FBInk && \
-	$(MAKE) clean
+	$(MAKE) distclean
 	cd FBInk && \
 	$(MAKE) release KOBO=true MINIMAL=true FONTS=true OPENTYPE=true IMAGE=true
 	cp -av FBInk/Release/libfbink.so.1.0.0 $(OUT_DIR)/libfbink.so.1.0.0
 
 	touch fbink.built
+endif
 
 luajit.built: | outdir luajitclean
 	cd LuaJIT && \
@@ -147,7 +164,7 @@ lfs: | outdir luajit.built $(LFS_OBJS)
 
 fbinkclean:
 	cd FBInk && \
-	$(MAKE) clean
+	$(MAKE) distclean
 
 luajitclean:
 	cd LuaJIT && \
