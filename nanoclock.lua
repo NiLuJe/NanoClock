@@ -362,19 +362,19 @@ end
 function NanoClock:handleNickelConfig()
 	local nickel = INIFile.parse(self.nickel_config)
 	if nickel then
-		if nickel.PowerOptions and nickel.PowerOptions.FrontLightLevel then
+		if nickel.PowerOptions and nickel.PowerOptions.FrontLightLevel ~= nil then
 			self.fl_brightness = nickel.PowerOptions.FrontLightLevel
 		end
 
 		if nickel.FeatureSettings then
-			if nickel.FeatureSettings.InvertScreen then
+			if nickel.FeatureSettings.InvertScreen ~= nil then
 				self.invert_screen = nickel.FeatureSettings.InvertScreen
 				logger.notice("Nickel InvertScreen=%s", tostring(self.invert_screen))
 			else
 				self.invert_screen = false
 			end
 
-			if nickel.FeatureSettings.DarkMode then
+			if nickel.FeatureSettings.DarkMode ~= nil then
 				self.dark_mode = nickel.FeatureSettings.DarkMode
 				logger.notice("Nickel DarkMode=%s", tostring(self.dark_mode))
 			else
