@@ -914,7 +914,26 @@ function NanoClock:waitForEvent()
 							if bit.band(event.mask, C.IN_Q_OVERFLOW) ~= 0 then
 								logger.warn("Tripped IN_Q_OVERFLOW")
 
-								-- We only watch a single file, so, we don't really have anything to do, this just means we lost events.
+								-- On the off-chance some of the lost events might have been UNMOUNT and/or IGNORED,
+								-- attempt to clear the full list of watches outselves...
+								for _, wd in pairs(self.inotify_file_map) do
+									if wd ~= -1 then
+										if C.inotify_rm_watch(self.inotify_fd, wd) == -1 then
+											-- That's too bad, but may not be fatal, so warn only...
+											local errno = ffi.errno()
+											logger.warn("inotify_rm_watch: %s", ffi.string(C.strerror(errno)))
+										else
+											-- Flag it as gone if rm was successful
+											self.inotify_file_map[self.inotify_wd_map[wd]] = -1
+											self.inotify_wd_map[wd] = nil
+										end
+									end
+								end
+
+								-- And then re-create 'em immediately
+								removed = true
+
+								-- We should arguably break here, but, logically, Q_OVERFLOW should be the last event in the buffer...
 							end
 
 							-- Next event!
