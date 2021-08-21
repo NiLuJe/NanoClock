@@ -21,6 +21,7 @@ OPT_CFLAGS:=-O2 -fomit-frame-pointer -pipe
 ifdef DEBUG
 	CFLAGS:=$(DEBUG_CFLAGS)
 	EXTRA_CPPFLAGS+=-DDEBUG
+	STRIP:=true
 else
 	CFLAGS?=$(OPT_CFLAGS)
 	EXTRA_CPPFLAGS+=-DNDEBUG
@@ -123,7 +124,7 @@ ifdef DEBUG
 fbink.built: | outdir
 	# Minimal CLI first
 	cd FBInk && \
-	$(MAKE) strip KOBO=true MINIMAL=true BITMAP=true DEBUG=true
+	$(MAKE) static KOBO=true MINIMAL=true BITMAP=true DEBUG=true
 	cp -av FBInk/Debug/fbink $(OUT_DIR)/fbink
 
 	# Then our shared library
@@ -153,7 +154,7 @@ endif
 
 luajit.built: | outdir luajitclean
 	cd LuaJIT && \
-	$(MAKE) HOST_CC="gcc -m32" CFLAGS="" CCOPT="" HOST_CFLAGS="-O2 -march=native -pipe" CROSS="$(CROSS_PREFIX)" TARGET_CFLAGS="$(CFLAGS)" amalg
+	$(MAKE) HOST_CC="gcc -m32" CFLAGS="" CCOPT="" HOST_CFLAGS="-O2 -march=native -pipe" CROSS="$(CROSS_PREFIX)" TARGET_CFLAGS="$(CFLAGS)" TARGET_STRIP="$(STRIP)" amalg
 	cp -av LuaJIT/src/luajit $(OUT_DIR)/luajit
 
 	touch luajit.built
