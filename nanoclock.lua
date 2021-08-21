@@ -48,6 +48,7 @@ local NanoClock = {
 	clock_fd = -1,
 	pfds = ffi.new("struct pollfd[3]"),
 	inotify_wd = {},
+	dirty_wd = {},
 
 	-- State tracking
 	clock_marker = 0,
@@ -232,7 +233,8 @@ function NanoClock:setupInotify()
 		was_destroyed = true
 	end
 
-	self.inotify_wd[self.config_path] = C.inotify_add_watch(self.inotify_fd, self.config_path, C.IN_CLOSE_WRITE)
+	self.inotify_wd[self.config_path] =
+		C.inotify_add_watch(self.inotify_fd, self.config_path, bit.bor(C.IN_MODIFY, C.IN_CLOSE_WRITE))
 	if self.inotify_wd[self.config_path] == -1 then
 		local errno = ffi.errno()
 		-- We allow ENOENT as it *will* happen when onboard is unmounted during an USBMS session!
@@ -788,16 +790,32 @@ function NanoClock:waitForEvent()
 							--       this is where we'd match event.wd against out own mapping in self.inotify_wd
 							--       But we don't, so, always assume event.wd == self.inotify_wd[self.config_path]
 
+							if bit.band(event.mask, C.IN_MODIFY) ~= 0 then
+								logger.dbg("Tripped IN_MODIFY for wd %d (config's: %d)",
+								           ffi.cast("int", event.wd),
+								           ffi.cast("int", self.inotify_wd[self.config_path]))
+
+								-- Mark that file as dirty, se we can properly reload it on CLOSE_WRITE
+								self.dirty_wd[event.wd] = true
+							end
+
 							if bit.band(event.mask, C.IN_CLOSE_WRITE) ~= 0 then
 								logger.dbg("Tripped IN_CLOSE_WRITE for wd %d (config's: %d)",
 								           ffi.cast("int", event.wd),
 								           ffi.cast("int", self.inotify_wd[self.config_path]))
 
-								-- Blank the previous clock area to avoid overlapping displays.
-								-- We can't optimize the refresh out, as the clock may have moved...
-								FBInk.fbink_cls(self.fbink_fd, self.fbink_cfg, self.fbink_last_rect, self.fbink_state.is_ntx_quirky_landscape)
+								if self.dirty_wd[event.wd] then
+									-- Blank the previous clock area to avoid overlapping displays.
+									-- We can't optimize the refresh out, as the clock may have moved...
+									FBInk.fbink_cls(self.fbink_fd, self.fbink_cfg, self.fbink_last_rect, self.fbink_state.is_ntx_quirky_landscape)
 
-								self:reloadConfig()
+									self:reloadConfig()
+
+									-- Done!
+									self.dirty_wd[event.wd] = nil
+								else
+									logger.dbg("File wasn't modified, not doing anything")
+								end
 							end
 
 							if bit.band(event.mask, C.IN_UNMOUNT) ~= 0 then
