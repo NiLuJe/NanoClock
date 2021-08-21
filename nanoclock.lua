@@ -954,7 +954,8 @@ function NanoClock:waitForEvent()
 						-- Okay, check that we're iterating over a valid event.
 						if damage.format == C.DAMAGE_UPDATE_DATA_V1_NTX or
 						damage.format == C.DAMAGE_UPDATE_DATA_V1 or
-						damage.format == C.DAMAGE_UPDATE_DATA_V2 then
+						damage.format == C.DAMAGE_UPDATE_DATA_V2 or
+						damage.format == C.DAMAGE_UPDATE_DATA_SUNXI_KOBO_DISP2 then
 							-- Track our own marker so we can *avoid* reacting to it,
 							-- because that'd result in a neat infinite loop ;).
 							if damage.data.update_marker == self.clock_marker then
@@ -1002,11 +1003,20 @@ function NanoClock:waitForEvent()
 								}
 								if update_area:intersectWith(self.clock_area) then
 									-- We'll need to know if nightmode is currently enabled to do the same...
-									-- FIXME: On sunxi, detect eclipse waveform modes instead...
-									if bit.band(damage.data.flags, C.EPDC_FLAG_ENABLE_INVERSION) ~= 0 then
-										self.fbink_cfg.is_nightmode = true
+									if self.fbink_state.is_sunxi then
+										if damage.data.waveform_mode == C.EINK_GLK16_MODE or
+										   damage.data.waveform_mode == C.EINK_GCK16_MODE then
+											-- No HW inversion on sunxi... :'(
+											self.fbink_cfg.is_inverted = true
+										else
+											self.fbink_cfg.is_inverted = false
+										end
 									else
-										self.fbink_cfg.is_nightmode = false
+										if bit.band(damage.data.flags, C.EPDC_FLAG_ENABLE_INVERSION) ~= 0 then
+											self.fbink_cfg.is_nightmode = true
+										else
+											self.fbink_cfg.is_nightmode = false
+										end
 									end
 
 									-- Yup, we need to update the clock
