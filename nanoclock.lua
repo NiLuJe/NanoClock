@@ -241,7 +241,7 @@ function NanoClock:setupInotify()
 	-- * our watches were never actually created (e.g., first ever poll call)
 	-- * or they were destroyed by an unmount, in which case we try to recreate them
 	local watch_count = 0
-	for file, wd in pairs(self.inotify_file_map) do
+	for _, wd in pairs(self.inotify_file_map) do
 		if wd ~= -1 then
 			watch_count = watch_count + 1
 		end
@@ -267,9 +267,8 @@ function NanoClock:setupInotify()
 		-- but handle this case nonetheless by only creating new or destroyed watches,
 		-- leaving the others unscathed...
 		if was_destroyed or is_new then
-			self.inotify_file_map[file] =
-				C.inotify_add_watch(self.inotify_fd, file, bit.bor(C.IN_MODIFY, C.IN_CLOSE_WRITE))
-			if self.inotify_file_map[file] == -1 then
+			local wd = C.inotify_add_watch(self.inotify_fd, file, bit.bor(C.IN_MODIFY, C.IN_CLOSE_WRITE))
+			if wd == -1 then
 				local errno = ffi.errno()
 				-- We allow ENOENT as it *will* happen when onboard is unmounted during an USBMS session!
 				-- (Granted, the only damage events we should catch during an USBMS session are ours,
@@ -278,10 +277,9 @@ function NanoClock:setupInotify()
 					self:die(string.format("inotify_add_watch: %s", ffi.string(C.strerror(errno))))
 				end
 			else
-				self.inotify_wd_map[self.inotify_file_map[file]] = file
-				logger.dbg("Setup an inotify watch @ wd %d for `%s`",
-					ffi.cast("int", self.inotify_file_map[file]),
-					file)
+				self.inotify_wd_map[wd] = file
+				self.inotify_file_map[file] = wd
+				logger.dbg("Setup an inotify watch @ wd %d for `%s`", ffi.cast("int", wd), file)
 				-- If we've just recreated the watch after an unmount/remount cycle, force a config reload,
 				-- as it may have been updated outside of our oversight (e.g., USBMS)...
 				if was_destroyed then
