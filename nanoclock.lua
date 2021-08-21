@@ -955,7 +955,8 @@ function NanoClock:waitForEvent()
 						if damage.format == C.DAMAGE_UPDATE_DATA_V1_NTX or
 						damage.format == C.DAMAGE_UPDATE_DATA_V1 or
 						damage.format == C.DAMAGE_UPDATE_DATA_V2 or
-						damage.format == C.DAMAGE_UPDATE_DATA_SUNXI_KOBO_DISP2 then
+						(damage.format == C.DAMAGE_UPDATE_DATA_SUNXI_KOBO_DISP2
+						 and not damage.data.pen_mode) then
 							-- Track our own marker so we can *avoid* reacting to it,
 							-- because that'd result in a neat infinite loop ;).
 							if damage.data.update_marker == self.clock_marker then
@@ -1047,9 +1048,14 @@ function NanoClock:waitForEvent()
 								end
 							end
 						else
-							-- This should admittedly never happen...
-							logger.warn("Invalid damage event (format: %d)!",
-									ffi.cast("int", damage.format))
+							if damage.format == C.DAMAGE_UPDATE_DATA_SUNXI_KOBO_DISP2
+							and damage.data.pen_mode then
+								logger.dbg("Skipped pen mode update")
+							else
+								-- This should admittedly never happen...
+								logger.warn("Invalid damage event (format: %d)!",
+										ffi.cast("int", damage.format))
+							end
 						end
 					end
 				end
