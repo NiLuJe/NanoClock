@@ -319,7 +319,7 @@ function NanoClock:initConfig()
 end
 
 function NanoClock:reloadConfig()
-	logger.notice("NanoCLock's config file was modified, reloading it")
+	logger.notice("NanoClock's config file was modified, reloading it")
 	-- NOTE: We're only called on inotify events, so we *should* have a guarantee that the file actually exists...
 	self.cfg = INIFile.parse(self.config_path)
 	self:sanitizeConfig()
@@ -331,9 +331,7 @@ function NanoClock:reloadConfig()
 	self:displayClock("config")
 end
 
-function NanoClock:reloadNickelConfig()
-	logger.notice("Nickel's config file was modified, reloading it")
-
+function NanoClock:handleNickelConfig()
 	local nickel = INIFile.parse(self.nickel_config)
 	if nickel then
 		if nickel.PowerOptions and nickel.PowerOptions.FrontLightLevel then
@@ -372,6 +370,12 @@ function NanoClock:reloadNickelConfig()
 			end
 		end
 	end
+end
+
+function NanoClock:reloadNickelConfig()
+	logger.notice("Nickel's config file was modified, reloading it")
+
+	self:handleNickelConfig()
 end
 
 function NanoClock:sanitizeConfig()
@@ -1142,6 +1146,7 @@ function NanoClock:main()
 	self:initDamage()
 	self:initInotify()
 	self:initConfig()
+	self:handleNickelConfig()
 	logger.info("Initialized NanoClock %s with FBInk %s", self.version, FBInk.fbink_version())
 
 	-- Display the clock once on startup, so that we start with sane clock marker & area tracking
