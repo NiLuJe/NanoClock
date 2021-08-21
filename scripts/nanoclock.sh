@@ -65,7 +65,7 @@ if [ "${isSunxi}" = 1 ] ; then
 
 # Load the right kernel module
 KMOD_PATH="${NANOCLOCK_DIR}/kmod/${DEVICE_GEN}/${PLATFORM}/mxc_epdc_fb_damage.ko"
-if [ ! -f "${KMOD_PATH}" ] ; then
+if [ ! -f "\${KMOD_PATH}" ] ; then
 	logger -p "DAEMON.CRIT" -t "${SCRIPT_NAME}[\$\$]" "Platform ${DEVICE_GEN}/${PLATFORM} is unsupported: no kernel module!"
 	exit
 fi
@@ -73,7 +73,7 @@ fi
 if grep -q "mxc_epdc_fb_damage" "/proc/modules" ; then
 	logger -p "DAEMON.NOTICE" -t "${SCRIPT_NAME}[\$\$]" "Kernel module for platform ${DEVICE_GEN}/${PLATFORM} is already loaded!"
 else
-	if ! insmod "${KMOD_PATH}" ; then
+	if ! insmod "\${KMOD_PATH}" ; then
 		logger -p "DAEMON.ERR" -t "${SCRIPT_NAME}[\$\$]" "Platform ${DEVICE_GEN}/${PLATFORM} is unsupported: failed to load the kernel module!"
 		exit
 	fi
