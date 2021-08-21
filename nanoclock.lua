@@ -57,7 +57,11 @@ local NanoClock = {
 	clock_area = Geom:new{x = 0, y = 0, w = math.huge, h = math.huge},
 	-- From Nickel's config
 	fl_brightness = -1,
+	invert_screen = false,
 	dark_mode = false,
+	-- From Nickel's version tag
+	fw_version = 0,
+	fw_428 = util.getNormalizedVersion("4.28"),
 
 	-- I18N stuff
 	days_map = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" },
@@ -331,6 +335,28 @@ function NanoClock:reloadConfig()
 	self:displayClock("config")
 end
 
+function NanoClock:getFWVersion()
+	-- Pull the FW version from the version tag...
+	local fields = {}
+	local version_str = util.readFileAsString("/mnt/onboard/.kobo/version")
+
+	-- Split on ','
+	for field in version_str:gmatch("([^,]+)") do
+		table.insert(fields, field)
+	end
+
+	-- It's always the third field
+	local nickel_ver = fields[3]
+
+	-- Coerce that into a number we can compare easily...
+	if not nickel_ver then
+		logger.warn("Failed to parse Nickel's version string")
+		return
+	end
+
+	self.fw_version = util.getNormalizedVersion(nickel_ver)
+end
+
 function NanoClock:handleNickelConfig()
 	local nickel = INIFile.parse(self.nickel_config)
 	if nickel then
@@ -338,8 +364,25 @@ function NanoClock:handleNickelConfig()
 			self.fl_brightness = nickel.PowerOptions.FrontLightLevel
 		end
 
-		if nickel.FeatureSettings and nickel.FeatureSettings.DarkMode then
-			self.dark_mode = nickel.FeatureSettings.DarkMode
+		if nickel.FeatureSettings then
+			if nickel.FeatureSettings.InvertScreen then
+				self.invert_screen = nickel.FeatureSettings.InvertScreen
+				logger.notice("Nickel InvertScreen=%s", self.invert_screen)
+			end
+
+			if nickel.FeatureSettings.DarkMode then
+				self.dark_mode = nickel.FeatureSettings.DarkMode
+				logger.notice("Nickel DarkMode=%s", self.dark_mode)
+			end
+
+			-- NOTE: Because of course, everything is terrible, on FW 4.28+,
+			--       invert screen no longer relies on HW inversion on mxcfb...
+			--       So, to avoid breaking the HW inversion detection on older FW,
+			--       conflate InvertScreen w/ DarkMode on FW 4.28+...
+			if self.invert_screen and self.fw_version >= self.fw_428 then
+				self.dark_mode = self.invert_screen
+				logger.notice("FW 4.28+: Conflating InvertScreen with DarkMode!")
+			end
 
 			-- NOTE: On devices without eclipse waveform modes,
 			--       we don't really have a way of knowing *when* we'd actually
@@ -349,17 +392,13 @@ function NanoClock:handleNickelConfig()
 			-- so you're arguably asking for trouble in the first place ;).
 			if self.dark_mode then
 				if not self.fbink_state.is_sunxi then
-					logger.notice("Nickel's Dark Mode was enabled, attempting to deal with it")
 					if self.fbink_state.can_hw_invert then
 						self.fbink_cfg.is_nightmode = true
 					else
 						self.fbink_cfg.is_inverted = true
 					end
-				else
-					logger.notice("Nickel's Dark Mode was enabled")
 				end
 			else
-				logger.notice("Nickel's Dark Mode was disabled")
 				if not self.fbink_state.is_sunxi then
 					if self.fbink_state.can_hw_invert then
 						self.fbink_cfg.is_nightmode = false
@@ -1146,6 +1185,7 @@ function NanoClock:main()
 	self:initDamage()
 	self:initInotify()
 	self:initConfig()
+	self:getFWVersion()
 	self:handleNickelConfig()
 	logger.info("Initialized NanoClock %s with FBInk %s", self.version, FBInk.fbink_version())
 

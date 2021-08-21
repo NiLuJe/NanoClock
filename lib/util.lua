@@ -100,4 +100,15 @@ function util.orderedPairs(t)
 	return orderedNext, t, nil
 end
 
+-- c.f., Version:getNormalizedVersion @ <https://github.com/koreader/koreader/blob/master/frontend/version.lua>
+function util.getNormalizedVersion(nickel_ver)
+	local major, minor, build = nickel_ver:match("(%d+)%.(%d+)%.?(%d*)")
+
+	major = tonumber(major) or 0
+	minor = tonumber(minor) or 0
+	build = tonumber(build) or 0
+
+	return major * 1000000000 + minor * 1000000 + build
+end
+
 return util
