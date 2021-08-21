@@ -12,7 +12,7 @@ It also no longer requires firmware patching to handle physical buttons (as we n
 
 It's also written entirely in Lua, instead of a mix of shell & C, which should also help make it more efficient.
 
-The magic *does* require injecting some [code](https://github.com/NiLuJe/mxc_epdc_fb_damage) into the kernel in order to allow us to directly listen to screen refresh requests. This may affect portability somewhat, although, so far, the current lineup should be supported without issue. Things are still up in the air as far as future devices are concerned (e.g., the Elipsa), in which case we harmlessly abort on startup.
+The magic *does* require injecting some [code](https://github.com/NiLuJe/mxc_epdc_fb_damage) into the kernel in order to allow us to directly listen to screen refresh requests. This may affect portability somewhat, although, so far, the current lineup should be supported without issue, although non-mxcfb platforms (i.e., sunxi on Mk. 8) are somewhat quirkier, and may sport slightly different behavior, or fail to support some features.
 
 ## Installation
 
