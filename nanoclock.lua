@@ -394,19 +394,12 @@ function NanoClock:handleNickelConfig()
 			-- so you're arguably asking for trouble in the first place ;).
 			if self.dark_mode then
 				if not self.fbink_state.is_sunxi then
-					if self.fbink_state.can_hw_invert then
-						self.fbink_cfg.is_nightmode = true
-					else
-						self.fbink_cfg.is_inverted = true
-					end
+					-- We can't use true night mode anyway, as it would adversely affect bgless & overlay...
+					self.fbink_cfg.is_inverted = true
 				end
 			else
 				if not self.fbink_state.is_sunxi then
-					if self.fbink_state.can_hw_invert then
-						self.fbink_cfg.is_nightmode = false
-					else
-						self.fbink_cfg.is_inverted = false
-					end
+					self.fbink_cfg.is_inverted = false
 				end
 			end
 		end
