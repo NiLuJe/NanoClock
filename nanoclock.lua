@@ -377,9 +377,9 @@ function NanoClock:handleNickelConfig()
 			self.invert_screen = false
 		end
 
-		if nickel.ReadingSettings then
-			if nickel.ReadingSettings.DarkMode ~= nil then
-				self.dark_mode = nickel.ReadingSettings.DarkMode
+		if nickel.Reading then
+			if nickel.Reading.DarkMode ~= nil then
+				self.dark_mode = nickel.Reading.DarkMode
 				logger.notice("Nickel DarkMode=%s", tostring(self.dark_mode))
 			else
 				self.dark_mode = false
