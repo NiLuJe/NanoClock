@@ -468,12 +468,12 @@ function NanoClock:handleConfig()
 	end
 
 	-- Massage various settings into a usable form
-	if self.cfg.display.backgroundless then
+	if self.cfg.display.backgroundless and not self.fbink_state.is_sunxi then
 		self.fbink_cfg.is_bgless = true
 	else
 		self.fbink_cfg.is_bgless = false
 	end
-	if self.cfg.display.overlay then
+	if self.cfg.display.overlay and not self.fbink_state.is_sunxi then
 		self.fbink_cfg.is_overlay = true
 	else
 		self.fbink_cfg.is_overlay = false
