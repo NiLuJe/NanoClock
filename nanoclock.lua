@@ -61,6 +61,7 @@ local NanoClock = {
 	dark_mode = false,
 	-- From Nickel's version tag
 	fw_version = 0,
+	fw_version_str = "N/A",
 	fw_428 = util.getNormalizedVersion("4.28"),
 
 	-- I18N stuff
@@ -355,6 +356,7 @@ function NanoClock:getFWVersion()
 	end
 
 	self.fw_version = util.getNormalizedVersion(nickel_ver)
+	self.fv_version_str = nickel_ver
 end
 
 function NanoClock:handleNickelConfig()
@@ -615,8 +617,8 @@ function NanoClock:handleConfig()
 				self.fbink_cfg.wfm_mode = C.WFM_AUTO
 			end
 		else
-			if (self.fbink_cfg.fg_color == C.FG_BLACK or self.fbink_cfg.fg_color == C.FG_WHITE)
-			and (self.fbink_cfg.bg_color == C.BG_BLACK or self.fbink_cfg.bg_color == C.BG_WHITE) then
+			if (self.fbink_cfg.fg_color == C.FG_BLACK or self.fbink_cfg.fg_color == C.FG_WHITE) and
+			   (self.fbink_cfg.bg_color == C.BG_BLACK or self.fbink_cfg.bg_color == C.BG_WHITE) then
 				self.fbink_cfg.wfm_mode = C.WFM_DU
 			else
 				if self.fbink_state.is_sunxi then
@@ -1068,10 +1070,10 @@ function NanoClock:waitForEvent()
 					else
 						-- Okay, check that we're iterating over a valid event.
 						if damage.format == C.DAMAGE_UPDATE_DATA_V1_NTX or
-						damage.format == C.DAMAGE_UPDATE_DATA_V1 or
-						damage.format == C.DAMAGE_UPDATE_DATA_V2 or
-						(damage.format == C.DAMAGE_UPDATE_DATA_SUNXI_KOBO_DISP2
-						 and not damage.data.pen_mode) then
+						   damage.format == C.DAMAGE_UPDATE_DATA_V1 or
+						   damage.format == C.DAMAGE_UPDATE_DATA_V2 or
+						  (damage.format == C.DAMAGE_UPDATE_DATA_SUNXI_KOBO_DISP2 and
+						   not damage.data.pen_mode) then
 							-- Track our own marker so we can *avoid* reacting to it,
 							-- because that'd result in a neat infinite loop ;).
 							if damage.data.update_marker == self.clock_marker then
@@ -1084,7 +1086,7 @@ function NanoClock:waitForEvent()
 							-- i.e., queue_size == 63).
 							if damage.overflow_notify > 0 then
 								logger.notice("Damage event queue overflow! %d events have been lost!",
-									ffi.cast("int", damage.overflow_notify))
+								              ffi.cast("int", damage.overflow_notify))
 								overflowed = true
 							end
 
@@ -1092,7 +1094,7 @@ function NanoClock:waitForEvent()
 								-- This shouldn't happen all that much in practice,
 								-- but is an interesting data point ;).
 								logger.dbg("Stale damage event (%d more ahead)!",
-									ffi.cast("int", damage.queue_size - 1))
+								           ffi.cast("int", damage.queue_size - 1))
 							else
 								-- If we're at the end of the queue *after* an overflow,
 								-- assume we actually caught our own marker,
@@ -1138,16 +1140,18 @@ function NanoClock:waitForEvent()
 									-- Yup, we need to update the clock
 									need_update = true
 									logger.dbg("Requesting clock update: damage rectangle %s intersects with the clock's %s",
-										tostring(update_area), tostring(self.clock_area))
+									           tostring(update_area),
+									           tostring(self.clock_area))
 								else
 									logger.dbg("No clock update necessary: damage rectangle %s does not intersect with the clock's %s",
-										tostring(update_area), tostring(self.clock_area))
+									           tostring(update_area),
+									           tostring(self.clock_area))
 								end
 							else
 								logger.dbg("No clock update necessary: damage marker: %u vs. clock marker: %u (found: %s)",
-										ffi.cast("unsigned int", damage.data.update_marker),
-										ffi.cast("unsigned int", self.clock_marker),
-										tostring(self.marker_found))
+								           ffi.cast("unsigned int", damage.data.update_marker),
+								           ffi.cast("unsigned int", self.clock_marker),
+								           tostring(self.marker_found))
 							end
 
 							-- We only want to potentially update the clock on the *final* event in the queue.
@@ -1169,7 +1173,7 @@ function NanoClock:waitForEvent()
 							else
 								-- This should admittedly never happen...
 								logger.warn("Invalid damage event (format: %d)!",
-										ffi.cast("int", damage.format))
+								            ffi.cast("int", damage.format))
 							end
 						end
 					end
@@ -1187,7 +1191,10 @@ function NanoClock:main()
 	self:initConfig()
 	self:getFWVersion()
 	self:handleNickelConfig()
-	logger.info("Initialized NanoClock %s with FBInk %s", self.version, FBInk.fbink_version())
+	logger.info("Initialized NanoClock %s with FBInk %s on FW %s",
+	            self.version,
+	            FBInk.fbink_version(),
+	            self.fw_version_str)
 
 	-- Display the clock once on startup, so that we start with sane clock marker & area tracking
 	self:displayClock("init")
