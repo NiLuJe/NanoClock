@@ -49,6 +49,40 @@ if is_integer "${NICKEL_BUILD}" && [ "${NICKEL_BUILD}" -ge "8432" ] ; then
 	export FBINK_ALLOW_HW_INVERT=1
 fi
 
+# NOTE: On sunxi, we need to make sure the module is inserted *before* Nickel boots.
+#       This here is already too late, so, patch the on-animator script instead,
+#       it'll take on the next boot...
+# shellcheck disable=SC2154
+if [ "${isSunxi}" = 1 ] ; then
+	if ! grep -q "nanoclock-load-fbdamage.sh" "/etc/init.d/on-animator.sh" ; then
+		# Patch on-animator
+		logger -p "DAEMON.NOTICE" -t "${SCRIPT_NAME}[$$]" "Patching on-animator to load fbdamage early..."
+		sed '/^#!\/bin\/sh/a \/usr\/local\/NanoClock\/bin\/nanoclock-load-fbdamage.sh' -i "/etc/init.d/on-animator.sh"
+
+		# Actually generate the script ;).
+		cat > "/usr/local/NanoClock/bin/nanoclock-load-fbdamage.sh" <<EoF
+#!/bin/sh
+
+# Load the right kernel module
+KMOD_PATH="${NANOCLOCK_DIR}/kmod/${DEVICE_GEN}/${PLATFORM}/mxc_epdc_fb_damage.ko"
+if [ ! -f "${KMOD_PATH}" ] ; then
+	logger -p "DAEMON.CRIT" -t "${SCRIPT_NAME}[\$\$]" "Platform ${DEVICE_GEN}/${PLATFORM} is unsupported: no kernel module!"
+	exit
+fi
+
+if grep -q "mxc_epdc_fb_damage" "/proc/modules" ; then
+	logger -p "DAEMON.NOTICE" -t "${SCRIPT_NAME}[\$\$]" "Kernel module for platform ${DEVICE_GEN}/${PLATFORM} is already loaded!"
+else
+	if ! insmod "${KMOD_PATH}" ; then
+		logger -p "DAEMON.ERR" -t "${SCRIPT_NAME}[\$\$]" "Platform ${DEVICE_GEN}/${PLATFORM} is unsupported: failed to load the kernel module!"
+		exit
+	fi
+fi
+EoF
+		chmod a+x "/usr/local/NanoClock/bin/nanoclock-load-fbdamage.sh"
+	fi
+fi
+
 # Load the right kernel module
 KMOD_PATH="./kmod/${DEVICE_GEN}/${PLATFORM}/mxc_epdc_fb_damage.ko"
 if [ ! -f "${KMOD_PATH}" ] ; then
