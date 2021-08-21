@@ -119,8 +119,22 @@ function NanoClock:initFBInk()
 	local platform = ffi.string(self.fbink_state.device_platform)
 	self.device_platform = tonumber(platform:match("%d"))
 
-	-- So far, this has held across the full lineup
-	self.battery_sysfs = "/sys/devices/platform/pmic_battery.1/power_supply/mc13892_bat/capacity"
+	-- On sunxi, make sure we track Nickel's rotation
+	if self.fbink_state.is_sunxi then
+		if FBInk.fbink_sunxi_ntx_enforce_rota(self.fbink_fd, C.FORCE_ROTA_WORKBUF, self.fbink_cfg) < 0 then
+			self:die("Failed to setup FBInk to track Nickel's rotation!")
+		end
+
+		-- Refresh the state
+		FBInk.fbink_get_state(self.fbink_cfg, self.fbink_state)
+	end
+
+	-- Use the right sysfs path for the battery, depending on the platform...
+	if self.device_platform >= 8 then
+		self.battery_sysfs = "/sys/class/power_supply/battery/capacity"
+	else
+		self.battery_sysfs = "/sys/class/power_supply/mc13892_bat/capacity"
+	end
 end
 
 function NanoClock:initDamage()
