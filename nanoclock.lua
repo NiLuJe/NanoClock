@@ -350,16 +350,24 @@ function NanoClock:reloadNickelConfig()
 			-- Thankfully, the feature isn't public on such devices,
 			-- so you're arguably asking for trouble in the first place ;).
 			if self.dark_mode then
-				if self.fbink_state.can_hw_invert then
-					self.fbink_cfg.is_nightmode = true
+				if not self.fbink_state.is_sunxi then
+					logger.notice("Nickel's Dark Mode was enabled, attempting to deal with it")
+					if self.fbink_state.can_hw_invert then
+						self.fbink_cfg.is_nightmode = true
+					else
+						self.fbink_cfg.is_inverted = true
+					end
 				else
-					self.fbink_cfg.is_inverted = true
+					logger.notice("Nickel's Dark Mode was enabled")
 				end
 			else
-				if self.fbink_state.can_hw_invert then
-					self.fbink_cfg.is_nightmode = false
-				else
-					self.fbink_cfg.is_inverted = false
+				logger.notice("Nickel's Dark Mode was disabled")
+				if not self.fbink_state.is_sunxi then
+					if self.fbink_state.can_hw_invert then
+						self.fbink_cfg.is_nightmode = false
+					else
+						self.fbink_cfg.is_inverted = false
+					end
 				end
 			end
 		end
@@ -1076,7 +1084,7 @@ function NanoClock:waitForEvent()
 										else
 											self.fbink_cfg.is_inverted = false
 										end
-									else
+									elseif not self.dark_mode then
 										if bit.band(damage.data.flags, C.EPDC_FLAG_ENABLE_INVERSION) ~= 0 then
 											self.fbink_cfg.is_nightmode = true
 										else
