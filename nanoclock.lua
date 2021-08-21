@@ -1221,7 +1221,10 @@ function NanoClock:fini()
 	if self.clock_fd ~= -1 then
 		C.close(self.clock_fd)
 	end
-	os.execute("rmmod mxc_epdc_fb_damage")
+	-- NOTE: Can't unload the module without breaking current DISP clients on sunxi :/
+	if not self.fbink_state.is_sunxi then
+		os.execute("rmmod mxc_epdc_fb_damage")
+	end
 	C.closelog()
 end
 
