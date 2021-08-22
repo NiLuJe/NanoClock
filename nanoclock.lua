@@ -929,9 +929,11 @@ function NanoClock:waitForEvent()
 						while ptr < buf + len do
 							local event = ffi.cast("const struct inotify_event*", ptr)
 
+							local file = self.inotify_wd_map[event.wd]
+
 							if bit.band(event.mask, C.IN_MODIFY) ~= 0 then
 								logger.dbg("Tripped IN_MODIFY for `%s` @ wd %d",
-								           self.inotify_wd_map[event.wd],
+								           file,
 								           ffi.cast("int", event.wd))
 
 								-- Mark that file as dirty, se we can properly reload it on CLOSE_WRITE
@@ -940,17 +942,17 @@ function NanoClock:waitForEvent()
 
 							if bit.band(event.mask, C.IN_CLOSE_WRITE) ~= 0 then
 								logger.dbg("Tripped IN_CLOSE_WRITE for `%s` @ wd %d",
-								           self.inotify_wd_map[event.wd],
+								           file,
 								           ffi.cast("int", event.wd))
 
 								if self.inotify_dirty_wds[event.wd] then
-									if self.inotify_wd_map[event.wd] == self.config_path then
+									if file == self.config_path then
 										-- Blank the previous clock area to avoid overlapping displays.
 										-- We can't optimize the refresh out, as the clock may have moved...
 										FBInk.fbink_cls(self.fbink_fd, self.fbink_cfg, self.fbink_last_rect, self.fbink_state.is_ntx_quirky_landscape)
 
 										self:reloadConfig()
-									elseif self.inotify_wd_map[event.wd] == self.nickel_config then
+									elseif file == self.nickel_config then
 										self:reloadNickelConfig()
 									end
 
@@ -963,21 +965,21 @@ function NanoClock:waitForEvent()
 
 							if bit.band(event.mask, C.IN_UNMOUNT) ~= 0 then
 								logger.dbg("Tripped IN_UNMOUNT for `%s` @ wd %d",
-								           self.inotify_wd_map[event.wd],
+								           file,
 								           ffi.cast("int", event.wd))
 
 								-- Flag the wd as destroyed by the system
-								self.inotify_file_map[self.inotify_wd_map[event.wd]] = -1
+								self.inotify_file_map[file] = -1
 								self.inotify_wd_map[event.wd] = nil
 							end
 
 							if bit.band(event.mask, C.IN_IGNORED) ~= 0 then
 								logger.dbg("Tripped IN_IGNORED for `%s` @ wd %d",
-								           self.inotify_wd_map[event.wd],
+								           file,
 								           ffi.cast("int", event.wd))
 
 								-- Flag the wd as destroyed by the system
-								self.inotify_file_map[self.inotify_wd_map[event.wd]] = -1
+								self.inotify_file_map[file] = -1
 								self.inotify_wd_map[event.wd] = nil
 								removed = true
 							end
@@ -995,7 +997,7 @@ function NanoClock:waitForEvent()
 											logger.warn("inotify_rm_watch: %s", ffi.string(C.strerror(errno)))
 										else
 											-- Flag it as gone if rm was successful
-											self.inotify_file_map[self.inotify_wd_map[wd]] = -1
+											self.inotify_file_map[file] = -1
 											self.inotify_wd_map[wd] = nil
 										end
 									end
