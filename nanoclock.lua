@@ -258,15 +258,14 @@ function NanoClock:setupInotify()
 	end
 
 	for _, file in ipairs(self.inotify_file_list) do
-		-- If a watch for that file was previously created, that means it's been destroyed by an unmount
-		local was_destroyed = false
-		if self.inotify_file_map[file] and self.inotify_file_map[file] == -1 then
-			was_destroyed = true
-		end
-		-- It might also have never been created...
 		local is_new = false
+		local was_destroyed = false
 		if not self.inotify_file_map[file] then
+			-- If this is the first poll call, watches might not have been created yet
 			is_new = true
+		elseif self.inotify_file_map[file] == -1 then
+			-- Or a watch might have been destroyed by an unmount
+			was_destroyed = true
 		end
 
 		-- It's unlikely that we'd end up with only *some* of the watches in the list alive,
