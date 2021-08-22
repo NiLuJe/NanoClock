@@ -1129,6 +1129,7 @@ function NanoClock:waitForEvent()
 								if update_area:intersectWith(self.clock_area) then
 									-- We'll need to know if nightmode is currently enabled to do the same...
 									if self.fbink_state.is_sunxi then
+										-- On sunxi, we can rely on the eclipse waveform modes to give us a hint
 										if damage.data.waveform_mode == C.EINK_GLK16_MODE or
 										   damage.data.waveform_mode == C.EINK_GCK16_MODE then
 											-- No HW inversion on sunxi... :'(
@@ -1137,6 +1138,7 @@ function NanoClock:waitForEvent()
 											self.fbink_cfg.is_inverted = false
 										end
 									elseif not self.dark_mode then
+										-- And on mxcfb, before FW 4.28, on the HW inversion flag
 										if bit.band(damage.data.flags, C.EPDC_FLAG_ENABLE_INVERSION) ~= 0 then
 											self.fbink_cfg.is_nightmode = true
 										else
