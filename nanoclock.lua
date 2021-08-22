@@ -969,7 +969,8 @@ function NanoClock:waitForEvent()
 								self.inotify_file_map[file] = -1
 								self.inotify_wd_map[event.wd] = nil
 								-- Remember what this wd points to,
-								-- we'll need it for UNMOUNT -> IGNORED pairs ;).
+								-- we'll need it in order to lookup an accurate file
+								-- for UNMOUNT -> IGNORED pairs ;).
 								self.inotify_removed_wd_map[event.wd] = file
 							end
 
@@ -989,7 +990,7 @@ function NanoClock:waitForEvent()
 								logger.warn("Tripped IN_Q_OVERFLOW")
 
 								-- On the off-chance some of the lost events might have been UNMOUNT and/or IGNORED,
-								-- attempt to clear the full list of watches outselves...
+								-- attempt to clear the full list of watches ourselves...
 								for wf, wd in pairs(self.inotify_file_map) do
 									if wd ~= -1 then
 										if C.inotify_rm_watch(self.inotify_fd, wd) == -1 then
