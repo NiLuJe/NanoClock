@@ -50,6 +50,7 @@ local NanoClock = {
 	inotify_wd_map = {},
 	inotify_file_map = {},
 	inotify_dirty_wds = {},
+	inotify_removed_wd_map = {},
 
 	-- State tracking
 	clock_marker = 0,
@@ -929,7 +930,7 @@ function NanoClock:waitForEvent()
 						while ptr < buf + len do
 							local event = ffi.cast("const struct inotify_event*", ptr)
 
-							local file = self.inotify_wd_map[event.wd]
+							local file = self.inotify_wd_map[event.wd] or self.inotify_removed_wd_map[event.wd]
 
 							if bit.band(event.mask, C.IN_MODIFY) ~= 0 then
 								logger.dbg("Tripped IN_MODIFY for `%s` @ wd %d",
@@ -971,6 +972,7 @@ function NanoClock:waitForEvent()
 								-- Flag the wd as destroyed by the system
 								self.inotify_file_map[file] = -1
 								self.inotify_wd_map[event.wd] = nil
+								self.inotify_removed_wd_map[event.wd] = file
 							end
 
 							if bit.band(event.mask, C.IN_IGNORED) ~= 0 then
@@ -981,6 +983,7 @@ function NanoClock:waitForEvent()
 								-- Flag the wd as destroyed by the system
 								self.inotify_file_map[file] = -1
 								self.inotify_wd_map[event.wd] = nil
+								self.inotify_removed_wd_map[event.wd] = nil
 								removed = true
 							end
 
@@ -999,6 +1002,7 @@ function NanoClock:waitForEvent()
 											-- Flag it as gone if rm was successful
 											self.inotify_file_map[file] = -1
 											self.inotify_wd_map[wd] = nil
+											self.inotify_removed_wd_map[wd] = nil
 										end
 									end
 								end
