@@ -1176,8 +1176,10 @@ function NanoClock:waitForEvent()
 								-- Moreover, if we ever get an automatic refresh in the middle
 								-- of a pen mode stream, we'd risk losing track of our own marker,
 								-- as markers are disabled in pen mode...
-								-- TL;DR: Just enforce a clock update on pen up to avoid all this,
-								--        much like we do to recover from a queue overflow.
+								-- TL;DR: Don't try to track our marker during pen mode,
+								--        so that we can simply refresh on pen up
+								--        or on the next conflict after that,
+								--        much like what we do to recover from a queue overflow.
 								self.marker_found = true
 								logger.dbg("Skipped pen mode update")
 							else
