@@ -1171,6 +1171,14 @@ function NanoClock:waitForEvent()
 						else
 							if damage.format == C.DAMAGE_UPDATE_DATA_SUNXI_KOBO_DISP2
 							and damage.data.pen_mode then
+								-- Streams of pen mode updates always end with a standard refresh,
+								-- and that involves a layer blending that might "eat" our clock ;).
+								-- Moreover, if we ever get an automatic refresh in the middle
+								-- of a pen mode stream, we'd risk losing track of our own marker,
+								-- as markers are disabled in pen mode...
+								-- TL;DR: Just enforce a clock update on pen up to avoid all this,
+								--        much like we do to recover from a queue overflow.
+								self.marker_found = true
 								logger.dbg("Skipped pen mode update")
 							else
 								-- This should admittedly never happen...
