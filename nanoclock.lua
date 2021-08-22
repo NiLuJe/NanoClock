@@ -972,6 +972,8 @@ function NanoClock:waitForEvent()
 								-- Flag the wd as destroyed by the system
 								self.inotify_file_map[file] = -1
 								self.inotify_wd_map[event.wd] = nil
+								-- Remember what this wd points to,
+								-- we'll need it for UNMOUNT -> IGNORED pairs ;).
 								self.inotify_removed_wd_map[event.wd] = file
 							end
 
