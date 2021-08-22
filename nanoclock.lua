@@ -992,7 +992,7 @@ function NanoClock:waitForEvent()
 
 								-- On the off-chance some of the lost events might have been UNMOUNT and/or IGNORED,
 								-- attempt to clear the full list of watches outselves...
-								for _, wd in pairs(self.inotify_file_map) do
+								for wf, wd in pairs(self.inotify_file_map) do
 									if wd ~= -1 then
 										if C.inotify_rm_watch(self.inotify_fd, wd) == -1 then
 											-- That's too bad, but may not be fatal, so warn only...
@@ -1000,7 +1000,7 @@ function NanoClock:waitForEvent()
 											logger.warn("inotify_rm_watch: %s", ffi.string(C.strerror(errno)))
 										else
 											-- Flag it as gone if rm was successful
-											self.inotify_file_map[file] = -1
+											self.inotify_file_map[wf] = -1
 											self.inotify_wd_map[wd] = nil
 											self.inotify_removed_wd_map[wd] = nil
 										end
