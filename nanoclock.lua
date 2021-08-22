@@ -608,17 +608,13 @@ function NanoClock:handleConfig()
 		if self.fbink_state.is_sunxi then
 			self.fbink_cfg.wfm_mode = C.WFM_GL16
 		else
-			-- NOTE: Possibly GL16 here too, or even REAGL on Mk. 7?
+			-- NOTE: We could arguably also use GL16 here, or even REAGL on Mk. 7 ;).
 			self.fbink_cfg.wfm_mode = C.WFM_AUTO
 		end
 	else
 		if self.fbink_cfg.is_overlay or self.fbink_cfg.is_bgless then
 			-- We don't control what's below us, so, stay conservative...
-			if self.fbink_state.is_sunxi then
-				self.fbink_cfg.wfm_mode = C.WFM_GL16
-			else
-				self.fbink_cfg.wfm_mode = C.WFM_AUTO
-			end
+			self.fbink_cfg.wfm_mode = C.WFM_AUTO
 		else
 			if (self.fbink_cfg.fg_color == C.FG_BLACK or self.fbink_cfg.fg_color == C.FG_WHITE) and
 			   (self.fbink_cfg.bg_color == C.BG_BLACK or self.fbink_cfg.bg_color == C.BG_WHITE) then
