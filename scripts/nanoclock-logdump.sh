@@ -8,7 +8,7 @@ CRASHLOG="/usr/local/NanoClock/crash.log"
 logread | grep '\(nanoclock\|nanoclock\.sh\)\[[[:digit:]]\+\]' > "${LOGFILE}"
 
 # Then with the crash log, if there's one
-if [ -f "${CRASHLOG}" ] ; then
+if [ -f "${CRASHLOG}" ] && [ "$(stat -c %s "${CRASHLOG}")" -gt 0 ] ; then
 	cat >> "${LOGFILE}" << EoF
 
 	Also found a crash log from: $(stat -c %y "${CRASHLOG}")
