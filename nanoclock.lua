@@ -465,9 +465,7 @@ function NanoClock:handleConfig()
 
 	-- Was a log dump requested?
 	if self.cfg.global.dump_log then
-		os.execute(
-			"logread | grep '\\(nanoclock\\|nanoclock\\.sh\\)\\[[[:digit:]]\\+\\]' > " .. self.addon_folder .. "/nanoclock.log"
-		)
+		os.execute(self.data_folder .. "/bin/nanoclock-logdump.sh")
 	end
 
 	-- Was debug logging requested?

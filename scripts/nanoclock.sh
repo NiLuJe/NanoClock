@@ -100,4 +100,4 @@ else
 fi
 
 # And here we go!
-exec ./nanoclock.lua
+exec ./nanoclock.lua > "crash.log" 2>&1
