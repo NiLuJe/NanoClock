@@ -460,6 +460,9 @@ function NanoClock:handleConfig()
 		os.rename(self.config_path, self.addon_folder .. "/uninstalled-" .. os.date("%Y%m%d-%H%M") .. ".ini")
 		os.remove("/etc/udev/rules.d/99-nanoclock.rules")
 		os.execute("rm -rf /usr/local/NanoClock")
+		if self.fbink_state.is_sunxi then
+			os.execute("sed '/^\\/usr\\/local\\/NanoClock\\/bin\\/nanoclock-load-fbdamage.sh/d' -i '/etc/init.d/on-animator.sh'")
+		end
 		self:die("Uninstalled!")
 	end
 
