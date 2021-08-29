@@ -688,7 +688,7 @@ function NanoClock:getFrontLightLevel()
 		local brightness = util.readFileAsNumber("/sys/class/backlight/mxc_msp430.0/actual_brightness")
 		return string.format(self.cfg.display.frontlight_pattern, brightness)
 	else
-		-- Otherwise, we have use the value from Nickel's config...
+		-- Otherwise, we can use the value from Nickel's config...
 		return string.format(self.cfg.display.frontlight_pattern, self.fl_brightness)
 	end
 end
