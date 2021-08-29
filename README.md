@@ -22,6 +22,8 @@ If all goes well, you should see the clock appear a few seconds after the device
 NOTE: Most settings are compatible with their MiniClock counterparts, but the file itself has changed format, so do double-check things manually.
 Changes to the config file should be picked up immediately.
 
+NOTE: On Mk. 8 (e.g., the Elipsa), you'll have to reboot the device one more time for the clock to show up!
+
 
 ## Uninstallation
 
