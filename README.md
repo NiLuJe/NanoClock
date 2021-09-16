@@ -27,7 +27,7 @@ NOTE: On Mk. 8 (e.g., the Elipsa), you'll have to reboot the device one more tim
 
 ## Uninstallation
 
-Just set the `uninstall` option in the `[global]` section of the config file to `1`.
+Just set the `uninstall` option in the `[global]` section of the config file to `true`.
 
 ## Credits
 
