@@ -71,6 +71,7 @@ LFS_SRCS:=luafilesystem/src/lfs.c
 #       * mk7/mx6sll-ntx is built from the Forma kernel (https://github.com/kobolabs/Kobo-Reader/tree/master/hw/imx6sll-forma)
 #       * mk7/mx6ull-ntx is built from the Nia kernel (https://github.com/kobolabs/Kobo-Reader/tree/master/hw/imx6ull-nia) (Binary identical to mk7/mx6sll-ntx, which makes sense)
 #       * mk8/b300-ntx is built from the Elipsa kernel (https://github.com/kobolabs/b300-elipsa)
+#       * mk9/mx6sll-ntx is built from the Libra 2 kernel (https://github.com/kobolabs/Kobo-Reader/tree/master/hw/imx6sll-libra2) (Binary identical to mk7/mx6sll-ntx, which makes sense)
 
 default: all
 
