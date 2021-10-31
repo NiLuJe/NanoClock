@@ -141,7 +141,7 @@ function NanoClock:initFBInk()
 	end
 
 	-- Use the right sysfs path for the battery, depending on the platform...
-	if self.device_platform >= 8 then
+	if lfs.attributes("/sys/class/power_supply/battery/capacity", "mode") == "file" then
 		self.battery_sysfs = "/sys/class/power_supply/battery/capacity"
 	else
 		self.battery_sysfs = "/sys/class/power_supply/mc13892_bat/capacity"
