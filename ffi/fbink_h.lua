@@ -130,6 +130,8 @@ typedef enum {
   DEVICE_KOBO_LIBRA_H2O = 384,
   DEVICE_KOBO_NIA = 382,
   DEVICE_KOBO_ELIPSA = 387,
+  DEVICE_KOBO_LIBRA_2 = 388,
+  DEVICE_KOBO_SAGE = 383,
   DEVICE_KOBO_MAX = 65535,
 } __attribute__((packed)) KOBO_DEVICE_ID_E;
 typedef enum {
@@ -165,6 +167,7 @@ typedef enum {
   DEVICE_POCKETBOOK_INKPAD = 840,
   DEVICE_POCKETBOOK_INKPAD_X = 1040,
   DEVICE_POCKETBOOK_COLOR_LUX = 32637,
+  DEVICE_POCKETBOOK_INKPAD_LITE = 970,
   DEVICE_POCKETBOOK_MAX = 65535,
 } __attribute__((packed)) POCKETBOOK_DEVICE_ID_E;
 typedef uint16_t DEVICE_ID_T;
@@ -214,6 +217,7 @@ typedef enum {
   NTX_ROTA_ODD_INVERTED = 2,
   NTX_ROTA_SANE = 3,
   NTX_ROTA_SUNXI = 4,
+  NTX_ROTA_CW_TOUCH = 5,
   NTX_ROTA_MAX = 255,
 } __attribute__((packed)) NTX_ROTA_INDEX_E;
 typedef uint8_t NTX_ROTA_INDEX_T;
@@ -270,6 +274,7 @@ typedef struct {
   uint8_t current_rota;
   bool can_rotate;
   bool can_hw_invert;
+  bool has_eclipse_wfm;
 } FBInkState;
 typedef struct {
   short int row;
@@ -303,6 +308,7 @@ typedef struct {
   bool sw_dithering;
   bool is_nightmode;
   bool no_refresh;
+  bool no_merge;
   bool to_syslog;
 } FBInkConfig;
 typedef struct {
