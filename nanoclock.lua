@@ -404,12 +404,12 @@ function NanoClock:handleNickelConfig()
 		-- Thankfully, the feature isn't public on such devices,
 		-- so you're arguably asking for trouble in the first place ;).
 		if self.dark_mode then
-			if not self.fbink_state.is_sunxi then
+			if not self.fbink_state.has_eclipse_wfm then
 				-- We can't use true night mode anyway, as it would adversely affect bgless & overlay...
 				self.fbink_cfg.is_inverted = true
 			end
 		else
-			if not self.fbink_state.is_sunxi then
+			if not self.fbink_state.has_eclipse_wfm then
 				self.fbink_cfg.is_inverted = false
 			end
 		end
@@ -1129,14 +1129,25 @@ function NanoClock:waitForEvent()
 								}
 								if update_area:intersectWith(self.clock_area) then
 									-- We'll need to know if nightmode is currently enabled to do the same...
-									if self.fbink_state.is_sunxi then
-										-- On sunxi, we can rely on the eclipse waveform modes to give us a hint
-										if damage.data.waveform_mode == C.EINK_GLK16_MODE or
-										   damage.data.waveform_mode == C.EINK_GCK16_MODE then
-											-- No HW inversion on sunxi... :'(
-											self.fbink_cfg.is_inverted = true
+									if self.fbink_state.has_eclipse_wfm then
+										if self.fbink_state.is_sunxi then
+											-- We can rely on the eclipse waveform modes to give us a hint
+											if damage.data.waveform_mode == C.EINK_GLK16_MODE or
+											damage.data.waveform_mode == C.EINK_GCK16_MODE then
+												-- No HW inversion on sunxi... :'(
+												self.fbink_cfg.is_inverted = true
+											else
+												self.fbink_cfg.is_inverted = false
+											end
 										else
-											self.fbink_cfg.is_inverted = false
+											-- We can rely on the eclipse waveform modes to give us a hint
+											if damage.data.waveform_mode == C.WAVEFORM_MODE_GLKW16 or
+											damage.data.waveform_mode == C.WAVEFORM_MODE_GCK16 then
+												-- No HW inversion in Dark Mode... :'(
+												self.fbink_cfg.is_inverted = true
+											else
+												self.fbink_cfg.is_inverted = false
+											end
 										end
 									elseif not self.dark_mode then
 										-- And on mxcfb, before FW 4.28, on the HW inversion flag
