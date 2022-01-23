@@ -58,11 +58,15 @@ if [ "${isSunxi}" = 1 ] ; then
 		# Patch on-animator
 		logger -p "DAEMON.NOTICE" -t "${SCRIPT_NAME}[$$]" "Patching on-animator to load fbdamage early..."
 		sed '/^#!\/bin\/sh/a \/usr\/local\/NanoClock\/bin\/nanoclock-load-fbdamage.sh' -i "/etc/init.d/on-animator.sh"
+	fi
 
-		# Actually generate the script ;).
+	# Handle fbdamage loader updates...
+	FBDAMAGE_LOADER_REV="2"
+	if ! grep -q "revision=${FBDAMAGE_LOADER_REV}" "/usr/local/NanoClock/bin/nanoclock-load-fbdamage.sh" 2>/dev/null ; then
+		# Generate the script ;).
 		cat > "/usr/local/NanoClock/bin/nanoclock-load-fbdamage.sh" <<EoF
 #!/bin/sh
-
+# revision=${FBDAMAGE_LOADER_REV}
 # Load the right kernel module
 KMOD_PATH="${NANOCLOCK_DIR}/kmod/${DEVICE_GEN}/${PLATFORM}/mxc_epdc_fb_damage.ko"
 if [ ! -f "\${KMOD_PATH}" ] ; then
