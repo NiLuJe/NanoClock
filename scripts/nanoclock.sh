@@ -56,7 +56,7 @@ fi
 #       made sure we always lost the race...
 # shellcheck disable=SC2154
 if [ "${isSunxi}" = 1 ] ; then
-	if ! grep -q "nanoclock-load-fbdamage.sh" "/etc/init.d/on-animator.sh" ; then
+	if ! grep -q "nanoclock-load-fbdamage.sh" "/etc/init.d/rcS" ; then
 		# Patch rcS
 		logger -p "DAEMON.NOTICE" -t "${SCRIPT_NAME}[$$]" "Patching rcS to load fbdamage early..."
 
