@@ -61,7 +61,7 @@ if [ "${isSunxi}" = 1 ] ; then
 	fi
 
 	# Handle fbdamage loader updates...
-	FBDAMAGE_LOADER_REV="2"
+	FBDAMAGE_LOADER_REV="3"
 	if ! grep -q "revision=${FBDAMAGE_LOADER_REV}" "/usr/local/NanoClock/bin/nanoclock-load-fbdamage.sh" 2>/dev/null ; then
 		# Generate the script ;).
 		cat > "/usr/local/NanoClock/bin/nanoclock-load-fbdamage.sh" <<EoF
@@ -77,13 +77,12 @@ fi
 if grep -q "mxc_epdc_fb_damage" "/proc/modules" ; then
 	logger -p "DAEMON.NOTICE" -t "${SCRIPT_NAME}[\$\$]" "Kernel module for platform ${DEVICE_GEN}/${PLATFORM} is already loaded!"
 else
-	# NOTE: Sleep a while because everything is terrible and race-y, especially since FW 4.31.19086...
-	usleep 250000
 	if ! insmod "\${KMOD_PATH}" ; then
 		logger -p "DAEMON.ERR" -t "${SCRIPT_NAME}[\$\$]" "Platform ${DEVICE_GEN}/${PLATFORM} is unsupported: failed to load the kernel module!"
 		exit
 	fi
-	usleep 500000
+	# NOTE: Sleep a while because everything is terrible and race-y, especially since FW 4.31.19086...
+	usleep 750000
 fi
 EoF
 		chmod a+x "/usr/local/NanoClock/bin/nanoclock-load-fbdamage.sh"
