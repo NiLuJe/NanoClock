@@ -50,20 +50,14 @@ if is_integer "${NICKEL_BUILD}" && [ "${NICKEL_BUILD}" -ge "8432" ] ; then
 fi
 
 # NOTE: On sunxi, we need to make sure the module is inserted *before* Nickel boots.
-#       This here is already too late, so, patch the rcS script instead,
+#       This here is already too late, so, patch the on-animator script instead,
 #       it'll take on the next boot...
-# NOTE: We used to patch on-animator, but this is race-y, and weird kernel shenanigans in FW 4.31.19086
-#       made sure we always lost the race...
 # shellcheck disable=SC2154
 if [ "${isSunxi}" = 1 ] ; then
-	if ! grep -q "nanoclock-load-fbdamage.sh" "/etc/init.d/rcS" ; then
-		# Patch rcS
-		logger -p "DAEMON.NOTICE" -t "${SCRIPT_NAME}[$$]" "Patching rcS to load fbdamage early..."
-
-		# Prepend our script before the first top-level subshell, which happens to be when on-animator is loaded.
-		# (We want to run before on-animator for KFMon's benefit).
-		awk '!found && /^\(/ { print "/usr/local/NanoClock/bin/nanoclock-load-fbdamage.sh"; found=1; }; 1;' "/etc/init.d/rcS" > "/tmp/fbdamage_sunxi"
-		mv "/tmp/fbdamage_sunxi" "/etc/init.d/rcS"
+	if ! grep -q "nanoclock-load-fbdamage.sh" "/etc/init.d/on-animator.sh" ; then
+		# Patch on-animator
+		logger -p "DAEMON.NOTICE" -t "${SCRIPT_NAME}[$$]" "Patching on-animator to load fbdamage early..."
+		sed '/^#!\/bin\/sh/a \/usr\/local\/NanoClock\/bin\/nanoclock-load-fbdamage.sh' -i "/etc/init.d/on-animator.sh"
 
 		# Actually generate the script ;).
 		cat > "/usr/local/NanoClock/bin/nanoclock-load-fbdamage.sh" <<EoF
