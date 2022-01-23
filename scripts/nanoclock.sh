@@ -73,13 +73,21 @@ fi
 if grep -q "mxc_epdc_fb_damage" "/proc/modules" ; then
 	logger -p "DAEMON.NOTICE" -t "${SCRIPT_NAME}[\$\$]" "Kernel module for platform ${DEVICE_GEN}/${PLATFORM} is already loaded!"
 else
+	# NOTE: Sleep a while because everything is terrible and race-y, especially since FW 4.31.19086...
+	usleep 250000
 	if ! insmod "\${KMOD_PATH}" ; then
 		logger -p "DAEMON.ERR" -t "${SCRIPT_NAME}[\$\$]" "Platform ${DEVICE_GEN}/${PLATFORM} is unsupported: failed to load the kernel module!"
 		exit
 	fi
+	usleep 500000
 fi
 EoF
 		chmod a+x "/usr/local/NanoClock/bin/nanoclock-load-fbdamage.sh"
+	fi
+
+	# And add another shitty delay before starting nickel because of the insane disp open races since FW 4.31.19086...
+	if ! grep -q "fbdamage" "/etc/init.d/rcS" ; then
+		sed '/hindenburg/a usleep 750000 # for fbdamage' -i "/etc/init.d/rcS"
 	fi
 fi
 
