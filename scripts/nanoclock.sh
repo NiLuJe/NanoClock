@@ -24,7 +24,11 @@ fi
 eval "$(${FBINK_BIN} -e)"
 
 # If we're not on sunxi, wait until onboard is mounted, nickel is up, and the boot anim is done.
-# On sunxi, the timing of the fbdamage module load is of paramount importance, because everything is terrible and race-y...
+# NOTE: On sunxi, the timing of the fbdamage module load is of paramount importance, because everything is terrible and race-y,
+#       so we want to go on ASAP to load the module...
+#       Timings are so stupid that doing this (mostly) works on FW 4.31.19086, but did not on earlier versions,
+#       hence the on-animator shenanigans we do later on...
+# shellcheck disable=SC2154
 if [ "${isSunxi}" = 0 ] ; then
 	until grep -q /mnt/onboard /proc/mounts && pkill -0 nickel && ! pkill -0 on-animator.sh ; do
 		logger -p "DAEMON.NOTICE" -t "${SCRIPT_NAME}[$$]" "Waiting for the boot process to complete . . ."
