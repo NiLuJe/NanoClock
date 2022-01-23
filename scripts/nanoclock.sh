@@ -20,14 +20,18 @@ if ! cd "${NANOCLOCK_DIR}" ; then
 	exit
 fi
 
-# Wait until onboard is mounted, nickel is up, and the boot anim is done.
-until grep -q /mnt/onboard /proc/mounts && pkill -0 nickel && ! pkill -0 on-animator.sh ; do
-	logger -p "DAEMON.NOTICE" -t "${SCRIPT_NAME}[$$]" "Waiting for the boot process to complete . . ."
-	sleep 5
-done
-
 # Platform checks
 eval "$(${FBINK_BIN} -e)"
+
+# If we're not on sunxi, wait until onboard is mounted, nickel is up, and the boot anim is done.
+# On sunxi, the timing of the fbdamage module load is of paramount importance, because everything is terrible and race-y...
+if [ "${isSunxi}" = 0 ] ; then
+	until grep -q /mnt/onboard /proc/mounts && pkill -0 nickel && ! pkill -0 on-animator.sh ; do
+		logger -p "DAEMON.NOTICE" -t "${SCRIPT_NAME}[$$]" "Waiting for the boot process to complete . . ."
+		sleep 5
+	done
+fi
+
 # shellcheck disable=SC2154
 DEVICE_GEN="mk$(echo "${devicePlatform}" | sed -re 's/^.+([[:digit:]]+)$/\1/')"
 
@@ -61,7 +65,7 @@ if [ "${isSunxi}" = 1 ] ; then
 	fi
 
 	# Handle fbdamage loader updates...
-	FBDAMAGE_LOADER_REV="3"
+	FBDAMAGE_LOADER_REV="4"
 	if ! grep -q "revision=${FBDAMAGE_LOADER_REV}" "/usr/local/NanoClock/bin/nanoclock-load-fbdamage.sh" 2>/dev/null ; then
 		# Generate the script ;).
 		cat > "/usr/local/NanoClock/bin/nanoclock-load-fbdamage.sh" <<EoF
@@ -81,16 +85,9 @@ else
 		logger -p "DAEMON.ERR" -t "${SCRIPT_NAME}[\$\$]" "Platform ${DEVICE_GEN}/${PLATFORM} is unsupported: failed to load the kernel module!"
 		exit
 	fi
-	# NOTE: Sleep a while because everything is terrible and race-y, especially since FW 4.31.19086...
-	usleep 750000
 fi
 EoF
 		chmod a+x "/usr/local/NanoClock/bin/nanoclock-load-fbdamage.sh"
-	fi
-
-	# And add another shitty delay before starting nickel because of the insane disp open races since FW 4.31.19086...
-	if ! grep -q "fbdamage" "/etc/init.d/rcS" ; then
-		sed '/hindenburg/a usleep 750000 # for fbdamage' -i "/etc/init.d/rcS"
 	fi
 fi
 

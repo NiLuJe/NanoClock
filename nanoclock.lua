@@ -462,7 +462,6 @@ function NanoClock:handleConfig()
 		os.execute("rm -rf /usr/local/NanoClock")
 		if self.fbink_state.is_sunxi then
 			os.execute("sed '/^\\/usr\\/local\\/NanoClock\\/bin\\/nanoclock-load-fbdamage.sh/d' -i '/etc/init.d/on-animator.sh'")
-			os.execute("sed '/# for fbdamage$/d' -i '/etc/init.d/rcS'")
 		end
 		self:die("Uninstalled!")
 	end
