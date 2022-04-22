@@ -147,6 +147,7 @@ typedef enum {
   DEVICE_POCKETBOOK_614 = 614,
   DEVICE_POCKETBOOK_615 = 615,
   DEVICE_POCKETBOOK_616 = 616,
+  DEVICE_POCKETBOOK_617 = 617,
   DEVICE_POCKETBOOK_TOUCH = 622,
   DEVICE_POCKETBOOK_LUX = 623,
   DEVICE_POCKETBOOK_BASIC_TOUCH = 624,
@@ -199,6 +200,10 @@ typedef enum {
   WFM_CLEAR = 24,
   WFM_GC4L = 25,
   WFM_GCC16 = 26,
+  WFM_GC16_PARTIAL = 27,
+  WFM_GCK16_PARTIAL = 28,
+  WFM_DUNM = 29,
+  WFM_P2SW = 30,
   WFM_MAX = 255,
 } __attribute__((packed)) WFM_MODE_INDEX_E;
 typedef uint8_t WFM_MODE_INDEX_T;
@@ -236,6 +241,20 @@ typedef enum {
   FORCE_ROTA_MAX = 127,
 } __attribute__((packed)) SUNXI_FORCE_ROTA_INDEX_E;
 typedef int8_t SUNXI_FORCE_ROTA_INDEX_T;
+typedef enum {
+  MTK_SWIPE_DIR_DOWN = 0,
+  MTK_SWIPE_DIR_UP = 1,
+  MTK_SWIPE_DIR_LEFT = 2,
+  MTK_SWIPE_DIR_RIGHT = 3,
+  MTK_SWIPE_DIR_MAX = 255,
+} __attribute__((packed)) MTK_SWIPE_DIRECTION_INDEX_E;
+typedef uint8_t MTK_SWIPE_DIRECTION_INDEX_T;
+typedef enum {
+  MTK_HALFTONE_DISABLED = 0,
+  MTK_HALFTONE_DEFAULT_CHECKER_SIZE = 1,
+  MTK_HALFTONE_MAX_CHECKER_SIZE = 2147483647,
+} __attribute__((packed)) MTK_HALFTONE_MODE_INDEX_E;
+typedef uint8_t MTK_HALFTONE_MODE_INDEX_T;
 typedef struct {
   long int user_hz;
   const char *restrict font_name;
@@ -245,6 +264,7 @@ typedef struct {
   uint32_t screen_height;
   uint32_t scanline_stride;
   uint32_t bpp;
+  bool inverted_grayscale;
   char device_name[16];
   char device_codename[16];
   char device_platform[16];
@@ -267,6 +287,7 @@ typedef struct {
   bool sunxi_has_fbdamage;
   SUNXI_FORCE_ROTA_INDEX_T sunxi_force_rota;
   bool is_kindle_legacy;
+  bool is_kindle_mtk;
   bool is_kobo_non_mt;
   uint8_t ntx_boot_rota;
   NTX_ROTA_INDEX_T ntx_rota_quirk;
@@ -309,6 +330,7 @@ typedef struct {
   bool is_nightmode;
   bool no_refresh;
   bool no_merge;
+  bool is_animated;
   bool to_syslog;
 } FBInkConfig;
 typedef struct {
@@ -402,6 +424,10 @@ static const int KEEP_CURRENT_BITDEPTH = 128;
 static const int KEEP_CURRENT_GRAYSCALE = 128;
 static const int TOGGLE_GRAYSCALE = 64;
 int fbink_set_fb_info(int, uint32_t, uint8_t, uint8_t, const FBInkConfig *restrict);
-int fbink_toggle_sunxi_ntx_pen_mode(int, bool);
+int fbink_sunxi_toggle_ntx_pen_mode(int, bool);
 int fbink_sunxi_ntx_enforce_rota(int, SUNXI_FORCE_ROTA_INDEX_T, const FBInkConfig *restrict);
+int fbink_mtk_set_swipe_data(MTK_SWIPE_DIRECTION_INDEX_T, uint8_t);
+int fbink_wait_for_any_complete(int);
+int fbink_mtk_set_halftone(int, const FBInkRect *, MTK_HALFTONE_MODE_INDEX_T);
+int fbink_mtk_toggle_auto_reagl(int, bool);
 ]]
