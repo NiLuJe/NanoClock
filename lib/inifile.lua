@@ -36,7 +36,8 @@ local inifile = {
 
 function inifile.parse(path)
 	local t = {}
-	local section
+	-- Ensure we won't crash on orphaned k/v pairs at the top of the file...
+	local section = "orphaned"
 
 	for line in io.lines(path) do
 		-- Section headers
