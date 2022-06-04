@@ -1,7 +1,7 @@
 --[[
 	Minor helper functions to deal with the FBInk ffi bindings.
 
-	Copyright (C) 2021 NiLuJe <ninuje@gmail.com>
+	Copyright (C) 2021-2022 NiLuJe <ninuje@gmail.com>
 	SPDX-License-Identifier: GPL-3.0-or-later
 --]]
 
