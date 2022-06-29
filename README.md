@@ -24,7 +24,8 @@ Changes to the config file should be picked up immediately.
 
 NOTE: On Mk. 8 (e.g., the Elipsa & Sage), you'll have to reboot the device one more time for the clock to show up! Please also note that FW 4.31.19086 appears to have exposed even more sunxi mishaps, so things may be a bit shaky...
 
-NOTE: On Mk. 9 (Libra 2), this will probably unearth a new weird and wondrous kernel bug that may prevent your device from booting (c.f., https://github.com/koreader/koreader/issues/8414 for more details).
+NOTE: On Mk. 9 (Libra 2), this will probably unearth a new weird and wondrous kernel bug that may prevent your device from booting (c.f., https://github.com/koreader/koreader/issues/8414 for more details).  
+You might want to look into a more integrated solution on that device (e.g., [NickelClock](https://github.com/shermp/NickelClock) ;)).
 
 ## Uninstallation
 
