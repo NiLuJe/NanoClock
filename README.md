@@ -27,6 +27,8 @@ NOTE: On Mk. 8 (e.g., the Elipsa & Sage), you'll have to reboot the device one m
 NOTE: On Mk. 9 (Libra 2), this will probably unearth a new weird and wondrous kernel bug that may prevent your device from booting (c.f., https://github.com/koreader/koreader/issues/8414 for more details).  
 You might want to look into a more integrated solution on that device (e.g., [NickelClock](https://github.com/shermp/NickelClock) ;)).
 
+![Font examples](fonts.png)
+
 ## Uninstallation
 
 Just set the `uninstall` option in the `[global]` section of the config file to `true`.
